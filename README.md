@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KeepMySnaps
 
-## Getting Started
+Snapchat's data export hands you a folder of files stamped with the day the
+export was built, with the captions torn off and the locations missing. The
+real dates and coordinates are sitting in a JSON file right next to the photos.
+This puts them back.
 
-First, run the development server:
+Everything runs in the browser. There is no server, no upload step and no
+account — the ZIP is read, rewritten and repacked in the tab.
+
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install && npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm test
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How the pipeline works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`src/lib/` holds the whole thing, in three pieces:
 
-## Learn More
+| File | Job |
+| --- | --- |
+| `snapchat.ts` | Parses `memories_history.json` and matches each entry to the file it belongs to |
+| `exif.ts` | Writes capture time and GPS into JPEG EXIF via piexifjs |
+| `process.ts` | Drives it: unzip → pair overlays → flatten → tag → repack |
 
-To learn more about Next.js, take a look at the following resources:
+**Matching** is the fiddly part, because Snapchat has shipped several shapes of
+this export and the JSON doesn't reliably name the file each memory refers to.
+Three passes run in order of trustworthiness: media ID found inside the
+filename, then same-calendar-day ordering, then position within the export.
+Anything still unmatched is reported in the summary rather than dropped.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Captions** ship as separate transparent PNGs — that's why exported photos
+look bare. Each overlay is composited onto its base photo on a canvas and the
+result is re-encoded as JPEG.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Videos** pass through untouched. MP4 has nowhere to put EXIF, so the capture
+date is carried by the output filename and the ZIP entry's timestamp, which is
+what the filesystem picks up on extract.
 
-## Deploy on Vercel
+Output is one ZIP containing the fixed media, a `keepmysnaps-index.csv` of
+every date and coordinate, and a README.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## The paywall
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The first 20 files are free. Past that, `NEXT_PUBLIC_STRIPE_PAYMENT_LINK`
+points at a Stripe Payment Link whose success URL is `/?unlocked=1`; that
+parameter lifts the limit and is remembered in localStorage. See
+`.env.example`. There is deliberately no server-side verification — anyone
+determined enough to type a query parameter was never going to pay five
+dollars, and adding a backend would mean the photos stop being none of our
+business.
+
+## Deadline
+
+The countdown reads from `DEADLINE` in `src/lib/config.ts`, currently
+1 September 2026. Change it there if Snapchat moves the date.
+
+## Notes
+
+- Capture times are written in UTC, which is the only thing Snapchat records.
+  EXIF's `OffsetTime` tags would say so explicitly, but piexifjs predates them
+  and throws on unknown tags, so the GPS timestamp carries that instead.
+- Large exports are processed one file at a time to keep memory flat, and the
+  output ZIP is stored uncompressed — the media is already compressed, so
+  deflating it again only costs time.
+
+Not affiliated with Snapchat or Snap Inc.
