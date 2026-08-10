@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   NotASnapchatExport,
   looksLikeZip,
@@ -14,12 +8,8 @@ import {
   type Progress,
   type Summary,
 } from "@/lib/process";
-import {
-  FREE_FILE_LIMIT,
-  PRICE_LABEL,
-  STRIPE_PAYMENT_LINK,
-  UNLOCK_STORAGE_KEY,
-} from "@/lib/config";
+import { FREE_FILE_LIMIT, PRICE_LABEL } from "@/lib/config";
+import { startCheckout, useUnlock } from "./useUnlock";
 import { Button, Eyebrow, Section } from "./ui";
 
 type State =
@@ -28,22 +18,6 @@ type State =
   | { kind: "done"; summary: Summary; url: string }
   | { kind: "error"; message: string };
 
-/**
- * Unlock state lives outside React: a Stripe Payment Link sends the buyer back
- * to `?unlocked=1`, and localStorage remembers it from then on.
- */
-function subscribeUnlock(onChange: () => void) {
-  window.addEventListener("storage", onChange);
-  return () => window.removeEventListener("storage", onChange);
-}
-
-function readUnlock(): boolean {
-  if (new URLSearchParams(window.location.search).get("unlocked") === "1") {
-    return true;
-  }
-  return window.localStorage.getItem(UNLOCK_STORAGE_KEY) === "1";
-}
-
 export default function Uploader() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
@@ -51,12 +25,7 @@ export default function Uploader() {
   const abortRef = useRef<AbortController | null>(null);
   const urlRef = useRef<string | null>(null);
 
-  const unlocked = useSyncExternalStore(subscribeUnlock, readUnlock, () => false);
-
-  // Persist an unlock that arrived via the query string, so a refresh keeps it.
-  useEffect(() => {
-    if (unlocked) window.localStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-  }, [unlocked]);
+  const { status: unlockStatus, unlocked, settled } = useUnlock();
 
   useEffect(
     () => () => {
@@ -98,9 +67,13 @@ export default function Uploader() {
         },
       });
 
+      // The unlock check may still be in flight if the drop happened quickly.
+      // Better to wait a moment than to hand a paying customer 20 files.
+      const isUnlocked = await settled();
+
       try {
         const { blob, summary } = await processExport(zips, {
-          limit: unlocked ? null : FREE_FILE_LIMIT,
+          limit: isUnlocked ? null : FREE_FILE_LIMIT,
           signal: controller.signal,
           onProgress: (progress) => setState({ kind: "working", progress }),
         });
@@ -124,7 +97,7 @@ export default function Uploader() {
         abortRef.current = null;
       }
     },
-    [unlocked],
+    [settled],
   );
 
   const onDrop = useCallback(
@@ -198,6 +171,13 @@ export default function Uploader() {
             {state.kind === "error" && (
               <p className="mx-auto mt-7 max-w-[52ch] text-[0.875rem] leading-[1.6] font-semibold text-ink">
                 {state.message}
+              </p>
+            )}
+
+            {unlockStatus === "unlocked" && state.kind !== "error" && (
+              <p className="mx-auto mt-7 max-w-[44ch] text-[0.8125rem] leading-[1.6] text-muted">
+                Payment found — no file limit on this browser. Drop the same ZIP
+                back in; we kept the receipt, not the photos.
               </p>
             )}
           </div>
@@ -310,6 +290,20 @@ function Result({
 }
 
 function Paywall({ withheld }: { withheld: number }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onBuy = async () => {
+    setBusy(true);
+    setError(null);
+    const failure = await startCheckout();
+    // On success the browser is already on its way to Stripe.
+    if (failure) {
+      setError(failure);
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="mt-12 border-t border-hair pt-10 text-center">
       <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
@@ -321,17 +315,13 @@ function Paywall({ withheld }: { withheld: number }) {
         are not Snapchat.
       </p>
 
-      {STRIPE_PAYMENT_LINK ? (
-        <a
-          href={STRIPE_PAYMENT_LINK}
-          className="mt-7 inline-flex h-12 items-center justify-center rounded-[6px] bg-blue px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-blue-deep"
-        >
-          Unlock everything — {PRICE_LABEL}
-        </a>
-      ) : (
-        <p className="mt-7 text-[0.8125rem] font-semibold text-muted">
-          Checkout isn&rsquo;t wired up yet. Set
-          NEXT_PUBLIC_STRIPE_PAYMENT_LINK.
+      <Button className="mt-7" onClick={onBuy} disabled={busy} type="button">
+        {busy ? "Opening checkout…" : `Unlock everything — ${PRICE_LABEL}`}
+      </Button>
+
+      {error && (
+        <p className="mx-auto mt-5 max-w-[44ch] text-[0.8125rem] leading-[1.6] font-semibold text-ink">
+          {error}
         </p>
       )}
 

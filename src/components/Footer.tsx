@@ -16,19 +16,19 @@ export default function Footer() {
 
         <nav className="flex items-center gap-7">
           <Link
-            href="#how-it-works"
+            href="/how-it-works"
             className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
           >
             How it works
           </Link>
           <Link
-            href="#faq"
+            href="/faq"
             className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
           >
             FAQ
           </Link>
           <Link
-            href="#upload"
+            href="/#upload"
             className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
           >
             Upload

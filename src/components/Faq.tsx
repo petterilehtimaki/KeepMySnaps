@@ -1,8 +1,10 @@
 import FaqList from "./FaqList";
 import { ButtonLink, Eyebrow, Section } from "./ui";
-import { HOMEPAGE_FAQS } from "@/content/faq";
+import { FAQS, HOMEPAGE_FAQS } from "@/content/faq";
 
 export default function Faq() {
+  const remaining = FAQS.length - HOMEPAGE_FAQS.length;
+
   return (
     <Section id="faq" className="pb-24 sm:pb-32">
       <Eyebrow>FAQ</Eyebrow>
@@ -16,7 +18,7 @@ export default function Faq() {
 
       <div className="mt-12">
         <ButtonLink href="/faq" variant="outline">
-          The other seven, with the bits we trimmed out of these
+          The other {remaining}, with the bits we trimmed out of these
         </ButtonLink>
       </div>
     </Section>

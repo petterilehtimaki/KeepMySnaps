@@ -58,7 +58,11 @@ business.
 ## Deadline
 
 The countdown reads from `DEADLINE` in `src/lib/config.ts`, currently
-1 September 2026. Change it there if Snapchat moves the date.
+26 September 2026 at 00:00 UTC — the end of the 12-month grace period that
+began when the policy rolled out on 26 September 2025. That is the earliest
+date deletion can start, not a universal cut-off: the rollout is per-account
+from then on, which is why the copy says "can start deleting" rather than
+naming the hour someone's photos disappear. Change it there if Snapchat moves.
 
 ## Notes
 
