@@ -4,11 +4,32 @@ import Footer from "@/components/Footer";
 import FaqList from "@/components/FaqList";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { FAQS } from "@/content/faq";
+import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+
+const TITLE = "FAQ — KeepMySnaps";
+const DESCRIPTION =
+  "Every question people actually ask about KeepMySnaps: whether we can see your photos (no), how to get your export out of Snapchat, what happens to captions and videos, and why it costs $5 once.";
 
 export const metadata: Metadata = {
-  title: "FAQ — KeepMySnaps",
-  description:
-    "Every question people actually ask about KeepMySnaps: whether we can see your photos (no), how to get your export out of Snapchat, what happens to captions and videos, and why it costs $5 once.",
+  title: TITLE,
+  description: DESCRIPTION,
+  // `openGraph` and `twitter` are replaced wholesale rather than merged, so
+  // the image and card type have to be restated — leaving them out strips the
+  // preview image and downgrades the card to `summary`.
+  openGraph: {
+    type: "website",
+    siteName: "KeepMySnaps",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/faq",
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE.url],
+  },
 };
 
 export default function FaqPage() {

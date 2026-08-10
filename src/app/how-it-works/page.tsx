@@ -4,11 +4,32 @@ import Footer from "@/components/Footer";
 import MyDataMockup from "@/components/MyDataMockup";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { STEPS } from "@/content/steps";
+import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+
+const TITLE = "How it works — KeepMySnaps";
+const DESCRIPTION =
+  "The long version: how to request your Snapchat export, what to drop in, and exactly which metadata gets written back into your photos. Three steps, one of which is just waiting for Snapchat.";
 
 export const metadata: Metadata = {
-  title: "How it works — KeepMySnaps",
-  description:
-    "The long version: how to request your Snapchat export, what to drop in, and exactly which metadata gets written back into your photos. Three steps, one of which is just waiting for Snapchat.",
+  title: TITLE,
+  description: DESCRIPTION,
+  // `openGraph` and `twitter` are replaced wholesale rather than merged, so
+  // the image and card type have to be restated — leaving them out strips the
+  // preview image and downgrades the card to `summary`.
+  openGraph: {
+    type: "website",
+    siteName: "KeepMySnaps",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/how-it-works",
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE.url],
+  },
 };
 
 export default function HowItWorksPage() {
