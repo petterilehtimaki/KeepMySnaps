@@ -18,7 +18,7 @@ export default function Faq() {
 
       <div className="mt-12">
         <ButtonLink href="/faq" variant="outline">
-          The other {remaining}, with the bits we trimmed out of these
+          {remaining} more on the FAQ page
         </ButtonLink>
       </div>
     </Section>

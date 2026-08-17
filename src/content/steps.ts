@@ -15,13 +15,10 @@ export const STEPS: Step[] = [
     n: "01",
     title: "Ask Snapchat for your data",
     short:
-      "In the app: Settings → My Data → Submit Request. Tick “Include your Memories”. They email you a download link, eventually. This part is on them.",
+      "In the app: Settings → Privacy Controls → My Data. Switch on “Export your Memories” and “Export JSON Files”. They email you a download link, eventually. This part is on them.",
     long: [
-      "Open Snapchat, tap your profile, then the gear icon for Settings. Scroll down to “My Data” and sign in again when it asks, which it will.",
-      "Tick “Include your Memories”. This is the one that matters. Leave it unticked and Snapchat sends you a tidy archive of JSON files describing your account and not one single photo. Plenty of people have made that trip twice.",
-      "Leave the date range alone unless you specifically want a slice of it. The default covers everything.",
-      "The export goes to the email address on the account, not to your phone. It arrives somewhere between twenty minutes and several days later — Snapchat builds these at their own pace and there is no queue position to check.",
-      "When the email turns up, download it promptly. The link expires after about a week and then you get to request the whole thing again. If your account is large, Snapchat splits the export across several ZIP files. You want all of them.",
+      "This is the longest step and the one nobody can hurry, because Snapchat builds the archive at its own pace and emails it when it's done. Your side of it takes about two minutes.",
+      "Every tap is below. Snapchat has rearranged this flow more than once, so these are drawn from the version that's live now rather than copied from an older guide — if what's on your screen doesn't match, look for the wording rather than the position.",
     ],
   },
   {
@@ -34,7 +31,6 @@ export const STEPS: Step[] = [
       "If Snapchat split your export into several ZIPs, drop all of them in together. They get treated as one export.",
       "There is no upload step. The archive is opened, rewritten and repacked inside this browser tab, on your own machine. No account, no server, nothing sent anywhere — you can disconnect from the internet once the page has loaded and it will still work.",
       "Big exports are happier on a desktop browser with the tab in the foreground. Browsers get uncomfortable somewhere past a few gigabytes at once, so if it stalls, feed it one ZIP at a time.",
-      "The progress bar is doing real work, not pretending. Closing the tab stops it, because the tab is where the work is happening.",
     ],
   },
   {

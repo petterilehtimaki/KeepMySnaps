@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import MyDataMockup from "@/components/MyDataMockup";
+import ExportWalkthrough from "@/components/ExportWalkthrough";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { STEPS } from "@/content/steps";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
@@ -43,9 +43,9 @@ export default function HowItWorksPage() {
             Three steps, one of which is just waiting for Snapchat
           </h1>
           <p className="mt-6 max-w-[54ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
-            The homepage has this in three sentences. This is the version with
-            the parts we left out — including the checkbox that quietly decides
-            whether your export contains any photos at all.
+            Getting the export out of Snapchat is the fiddly part, so that step
+            is here tap by tap — including the two switches that decide whether
+            your archive contains any photos at all.
           </p>
         </Section>
 
@@ -73,7 +73,7 @@ export default function HowItWorksPage() {
                 ))}
               </div>
 
-              {step.n === "01" && <MyDataMockup />}
+              {step.n === "01" && <ExportWalkthrough />}
             </div>
           </Section>
         ))}
@@ -84,8 +84,8 @@ export default function HowItWorksPage() {
               That&rsquo;s the whole thing
             </h2>
             <p className="mt-4 max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-cool">
-              There is no step four. If your export has already arrived, the
-              drop zone is waiting on the homepage.
+              If your export has already arrived, the drop zone is waiting on
+              the homepage.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/#upload" className="w-full sm:w-auto">

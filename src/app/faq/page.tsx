@@ -8,7 +8,7 @@ import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
 const TITLE = "FAQ — KeepMySnaps";
 const DESCRIPTION =
-  "Every question people actually ask about KeepMySnaps: whether we can see your photos (no), how to get your export out of Snapchat, what happens to captions and videos, and why it costs $5 once.";
+  "Whether we can see your photos (no), how to get your export out of Snapchat, why it costs $5 once, and what happens to videos.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -42,14 +42,10 @@ export default function FaqPage() {
           <h1 className="mt-4 max-w-[24ch] text-[clamp(1.75rem,4.2vw,2.75rem)] font-extrabold leading-[1.13] tracking-[-0.028em] text-balance">
             Questions people actually ask
           </h1>
-          <p className="mt-6 max-w-[54ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
-            All of them, with the answers at full length rather than the
-            versions we squeezed onto the homepage.
-          </p>
         </Section>
 
         <Section className="pb-24 sm:pb-32">
-          <FaqList items={FAQS} expanded />
+          <FaqList items={FAQS} />
 
           <div className="mt-14 max-w-[70ch]">
             <p className="max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-cool">

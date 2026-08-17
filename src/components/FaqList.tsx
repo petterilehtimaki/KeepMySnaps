@@ -2,22 +2,18 @@ import type { FaqItem } from "@/content/faq";
 
 /**
  * The accordion markup, shared by the homepage section and /faq so the two
- * can't drift. `expanded` switches to the fuller answers.
+ * can't drift.
+ *
+ * Every item renders closed. An accordion that opens one answer on load makes
+ * that answer look like the important one and pushes the rest below the fold.
  */
-export default function FaqList({
-  items,
-  expanded = false,
-}: {
-  items: FaqItem[];
-  expanded?: boolean;
-}) {
+export default function FaqList({ items }: { items: FaqItem[] }) {
   return (
     <div className="max-w-[70ch]">
-      {items.map((faq, i) => (
+      {items.map((faq) => (
         <details
           key={faq.q}
           className="group border-b border-hair py-5 first:border-t"
-          open={i === 0}
         >
           <summary className="flex cursor-pointer list-none items-start justify-between gap-6 text-[1rem] font-bold tracking-[-0.015em] [&::-webkit-details-marker]:hidden">
             {faq.q}
@@ -36,7 +32,7 @@ export default function FaqList({
             </span>
           </summary>
           <p className="mt-3 max-w-[60ch] pr-10 text-[0.9375rem] leading-[1.7] text-muted-cool">
-            {expanded ? (faq.long ?? faq.a) : faq.a}
+            {faq.a}
           </p>
         </details>
       ))}

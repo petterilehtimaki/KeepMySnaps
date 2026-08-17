@@ -53,7 +53,7 @@ const FEATURES = [
   {
     icon: icon.browser,
     title: "In your browser",
-    body: "Nothing installed or uploaded. Your photos never touch a server, because there isn't one.",
+    body: "No install, no account, no upload queue. It starts working the second you drop the file in.",
   },
   {
     icon: icon.tag,
@@ -83,12 +83,6 @@ export default function Hero() {
         <div className="mt-8 sm:mt-10">
           <Countdown />
         </div>
-
-        <p className="mx-auto mt-7 max-w-[52ch] text-[0.8125rem] leading-[1.6] text-muted">
-          That&rsquo;s the earliest date, not a universal one. Deletion rolls out
-          account by account from 26 September 2026, so yours could be later.
-          Or not.
-        </p>
 
         <h1 className="mx-auto mt-14 max-w-[26ch] text-[clamp(1.75rem,4.6vw,2.75rem)] font-extrabold leading-[1.12] tracking-[-0.028em] text-balance sm:mt-16">
           Save your <span className="snap-mark">Snapchat</span> memories before

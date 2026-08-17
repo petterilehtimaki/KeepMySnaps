@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+const LINKS = [
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/#upload", label: "Upload" },
+] as const;
+
 export default function Footer() {
   return (
     <footer className="border-t border-hair">
@@ -14,25 +22,17 @@ export default function Footer() {
           </p>
         </div>
 
-        <nav className="flex items-center gap-7">
-          <Link
-            href="/how-it-works"
-            className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
-          >
-            How it works
-          </Link>
-          <Link
-            href="/faq"
-            className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
-          >
-            FAQ
-          </Link>
-          <Link
-            href="/#upload"
-            className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
-          >
-            Upload
-          </Link>
+        {/* Five links no longer fit on one phone-width line, hence the wrap. */}
+        <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:justify-end">
+          {LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-[0.8125rem] font-semibold text-muted-cool transition-colors hover:text-ink"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </footer>
