@@ -27,7 +27,7 @@ export default function HowItWorks() {
 
       <div className="mt-14">
         <ButtonLink href="/how-it-works" variant="outline">
-          The longer version, in case we glossed over your bit
+          The step-by-step version
         </ButtonLink>
       </div>
     </Section>
