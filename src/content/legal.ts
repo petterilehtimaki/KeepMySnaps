@@ -17,8 +17,8 @@ export type LegalBlock =
 
 export const LEGAL_UPDATED = "17 August 2026";
 
-/** Fill this in before going live. It is deliberately conspicuous. */
-export const CONTACT = "[CONTACT]";
+/** The address on both legal pages. Change it here and both follow. */
+export const CONTACT = "keepmysnaps@protonmail.com";
 
 export const PRIVACY: LegalBlock[] = [
   {
