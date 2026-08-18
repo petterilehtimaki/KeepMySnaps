@@ -15,7 +15,7 @@ export type LegalBlock =
   | { kind: "p"; text: string }
   | { kind: "ul"; items: { lead?: string; text: string }[] };
 
-export const LEGAL_UPDATED = "17 August 2026";
+export const LEGAL_UPDATED = "18 August 2026";
 
 /** The address on both legal pages. Change it here and both follow. */
 export const CONTACT = "keepmysnaps@protonmail.com";
