@@ -14,6 +14,8 @@ import { Button, Eyebrow, Section } from "./ui";
 
 type State =
   | { kind: "idle" }
+  /** Blocked before anything was opened. `count` is how many ZIPs were offered. */
+  | { kind: "locked"; reason: "multi" | "used"; count: number }
   | { kind: "working"; progress: Progress }
   | { kind: "done"; summary: Summary; url: string }
   | { kind: "error"; message: string };
@@ -24,6 +26,24 @@ export default function Uploader() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const urlRef = useRef<string | null>(null);
+
+  /**
+   * Whether the one free run has been spent in this tab.
+   *
+   * The limit in process.ts applies per call, so without this a large export
+   * — which Snapchat splits across several ZIPs — could be fed in one file at
+   * a time for 20 free memories each. That isn't cunning, it's what a normal
+   * person does when a drop looks like it stalled.
+   *
+   * Held in memory on purpose: a reload or a new tab clears it. Closing that
+   * gap needs server-side identity, which would mean knowing who people are,
+   * which is the one thing this site is built not to do.
+   *
+   * The ref is what `run` reads — a state value would be a stale closure —
+   * and the state mirror only exists so the drop zone can mention it.
+   */
+  const freeRunUsedRef = useRef(false);
+  const [freeRunUsed, setFreeRunUsed] = useState(false);
 
   const { status: unlockStatus, unlocked, settled } = useUnlock();
 
@@ -49,6 +69,24 @@ export default function Uploader() {
         return;
       }
 
+      // Settle the unlock check before anything else. It starts on mount so
+      // it's almost always resolved by now, and deciding first means a
+      // blocked drop never flashes "Opening the ZIP" at someone.
+      const isUnlocked = await settled();
+
+      // Both gates are free-tier only, and both answer before a single byte
+      // is read: being turned away shouldn't cost you a five-gigabyte unzip.
+      if (!isUnlocked) {
+        if (freeRunUsedRef.current) {
+          setState({ kind: "locked", reason: "used", count: zips.length });
+          return;
+        }
+        if (zips.length > 1) {
+          setState({ kind: "locked", reason: "multi", count: zips.length });
+          return;
+        }
+      }
+
       if (urlRef.current) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -67,10 +105,6 @@ export default function Uploader() {
         },
       });
 
-      // The unlock check may still be in flight if the drop happened quickly.
-      // Better to wait a moment than to hand a paying customer 20 files.
-      const isUnlocked = await settled();
-
       try {
         const { blob, summary } = await processExport(zips, {
           limit: isUnlocked ? null : FREE_FILE_LIMIT,
@@ -80,6 +114,14 @@ export default function Uploader() {
 
         const url = URL.createObjectURL(blob);
         urlRef.current = url;
+
+        // Spent only once a run actually finishes. Dropping the wrong file
+        // and getting an error shouldn't burn anybody's one free look.
+        if (!isUnlocked) {
+          freeRunUsedRef.current = true;
+          setFreeRunUsed(true);
+        }
+
         setState({ kind: "done", summary, url });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -112,7 +154,10 @@ export default function Uploader() {
 
   const percent =
     state.kind === "working" && state.progress.total > 0
-      ? Math.min(100, Math.round((state.progress.done / state.progress.total) * 100))
+      ? Math.min(
+          100,
+          Math.round((state.progress.done / state.progress.total) * 100),
+        )
       : 0;
 
   return (
@@ -136,15 +181,17 @@ export default function Uploader() {
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
             className={`rounded-[10px] border border-dashed px-6 py-16 text-center transition-colors ${
-              dragging ? "border-blue bg-blue/[0.03]" : "border-hair bg-faint/60"
+              dragging
+                ? "border-blue bg-blue/[0.03]"
+                : "border-hair bg-faint/60"
             }`}
           >
             <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
               Drag your export ZIP here
             </p>
             <p className="mx-auto mt-2 max-w-[40ch] text-[0.875rem] leading-[1.6] text-muted-cool">
-              Several ZIPs is fine too — Snapchat splits big exports. Don&rsquo;t
-              unzip them first.
+              Several ZIPs is fine too — Snapchat splits big exports.
+              Don&rsquo;t unzip them first.
             </p>
 
             <input
@@ -176,12 +223,29 @@ export default function Uploader() {
 
             {unlockStatus === "unlocked" && state.kind !== "error" && (
               <p className="mx-auto mt-7 max-w-[44ch] text-[0.8125rem] leading-[1.6] text-muted">
-                Payment found — no file limit on this browser. Drop the same ZIP
-                back in; we kept the receipt, not the photos.
+                Payment found — no file limit on this browser, and you can drop
+                every ZIP in together. We kept the receipt, not the photos.
               </p>
             )}
+
+            {freeRunUsed &&
+              unlockStatus !== "unlocked" &&
+              state.kind !== "error" && (
+                <p className="mx-auto mt-7 max-w-[44ch] text-[0.8125rem] leading-[1.6] text-muted">
+                  Free preview used. Unlocking processes everything you have, in
+                  one go.
+                </p>
+              )}
           </div>
         ) : null}
+
+        {state.kind === "locked" && (
+          <LockedPanel
+            reason={state.reason}
+            count={state.count}
+            onDismiss={() => setState({ kind: "idle" })}
+          />
+        )}
 
         {state.kind === "working" && (
           <div className="rounded-[10px] border border-hair px-6 py-16 text-center">
@@ -189,8 +253,8 @@ export default function Uploader() {
               {state.progress.label}
             </p>
             <p className="mt-2 text-[0.875rem] text-muted-cool">
-              Leave this tab open. Closing it stops the work, because the work is
-              this tab.
+              Leave this tab open. Closing it stops the work, because the work
+              is this tab.
             </p>
 
             <div className="mx-auto mt-8 h-[3px] w-full max-w-md overflow-hidden rounded-full bg-hair">
@@ -284,12 +348,21 @@ function Result({
         </button>
       </div>
 
-      {summary.withheld > 0 && !unlocked && <Paywall withheld={summary.withheld} />}
+      {/*
+        Shown on any locked run, not just one with a remainder: a small first
+        ZIP can come out complete while three more sit in the downloads folder,
+        and nothing inside an archive says the others exist.
+      */}
+      {!unlocked && <Paywall withheld={summary.withheld} />}
     </div>
   );
 }
 
-function Paywall({ withheld }: { withheld: number }) {
+/**
+ * The only place checkout is started from, so the blocked panel and the
+ * post-run prompt can't drift apart in behaviour.
+ */
+function UnlockButton() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -305,16 +378,7 @@ function Paywall({ withheld }: { withheld: number }) {
   };
 
   return (
-    <div className="mt-12 border-t border-hair pt-10 text-center">
-      <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
-        {withheld.toLocaleString()} more memories are waiting
-      </p>
-      <p className="mx-auto mt-2 max-w-[48ch] text-[0.875rem] leading-[1.65] text-muted-cool">
-        The first {FREE_FILE_LIMIT} are free so you can open them and confirm the
-        dates are right. {PRICE_LABEL} unlocks the rest. Once, not monthly — we
-        are not Snapchat.
-      </p>
-
+    <>
       <Button className="mt-7" onClick={onBuy} disabled={busy} type="button">
         {busy ? "Opening checkout…" : `Unlock everything — ${PRICE_LABEL}`}
       </Button>
@@ -324,10 +388,80 @@ function Paywall({ withheld }: { withheld: number }) {
           {error}
         </p>
       )}
+    </>
+  );
+}
+
+/** Shown in place of the drop zone when a free-tier drop is turned away. */
+function LockedPanel({
+  reason,
+  count,
+  onDismiss,
+}: {
+  reason: "multi" | "used";
+  count: number;
+  onDismiss: () => void;
+}) {
+  const multi = reason === "multi";
+
+  return (
+    <div className="rounded-[10px] border border-hair px-6 py-16 text-center">
+      <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
+        {multi
+          ? `${count} export ZIPs at once`
+          : "You’ve had the free preview"}
+      </p>
+
+      <p className="mx-auto mt-3 max-w-[48ch] text-[0.875rem] leading-[1.65] text-muted-cool">
+        {multi
+          ? `One at a time is the free tier. ${PRICE_LABEL} runs all ${count} together, with no limit on how many memories come out.`
+          : `The first ${FREE_FILE_LIMIT} files are on the house, once. ${PRICE_LABEL} unlocks this export and every other ZIP Snapchat split it into, in full.`}
+      </p>
+
+      <UnlockButton />
+
+      {multi && (
+        <div className="mt-6">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="text-[0.8125rem] font-semibold text-muted-cool underline underline-offset-4 transition-colors hover:text-ink"
+          >
+            Or drop a single ZIP to try it free
+          </button>
+        </div>
+      )}
+
+      <p className="mx-auto mt-7 max-w-[44ch] text-[0.75rem] leading-[1.6] text-muted-cool">
+        {multi
+          ? "Nothing was opened — those files haven't been read."
+          : "Nothing was opened — that file hasn't been read."}
+      </p>
+    </div>
+  );
+}
+
+function Paywall({ withheld }: { withheld: number }) {
+  const remainder = withheld > 0;
+
+  return (
+    <div className="mt-12 border-t border-hair pt-10 text-center">
+      <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
+        {remainder
+          ? `${withheld.toLocaleString()} more memories are waiting`
+          : "Got more than one export ZIP?"}
+      </p>
+      <p className="mx-auto mt-2 max-w-[48ch] text-[0.875rem] leading-[1.65] text-muted-cool">
+        {remainder
+          ? `That's what's left in this one. ${PRICE_LABEL} unlocks the rest, and any other ZIPs Snapchat split your export into. Once, not monthly — we are not Snapchat.`
+          : `Large exports arrive in several. ${PRICE_LABEL} runs all of them at once with no file limit. Once, not monthly — we are not Snapchat.`}
+      </p>
+
+      <UnlockButton />
 
       <p className="mx-auto mt-5 max-w-[40ch] text-[0.75rem] leading-[1.6] text-muted-cool">
-        You&rsquo;ll come back here afterwards and drop the same ZIP in again.
-        Nothing was kept while you were gone.
+        You&rsquo;ll come back here afterwards and drop your ZIPs in again — all
+        of them this time. Nothing was kept while you were gone.
       </p>
     </div>
   );
