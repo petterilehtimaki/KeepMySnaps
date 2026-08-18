@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Countdown from "./Countdown";
+import HeroThumbnails from "./HeroThumbnails";
 import { ButtonLink, Section } from "./ui";
 
 /** Line-only icons — no fills, no colour, no rounded tiles. */
@@ -75,30 +76,50 @@ const FEATURES = [
 export default function Hero() {
   return (
     <>
-      <Section className="pt-20 pb-14 text-center sm:pt-28 sm:pb-16">
-        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted">
-          Snapchat can start deleting memories in
-        </p>
-
-        <div className="mt-8 sm:mt-10">
-          <Countdown />
+      <Section className="relative overflow-hidden pt-20 pb-14 text-center sm:pt-28 sm:pb-16">
+        {/*
+          Decoration only. `overflow-hidden` on the section means these get
+          clipped at its edge rather than widening the document, which is how a
+          long CTA label previously pushed this page 49px past a phone screen.
+        */}
+        <div className="pointer-events-none absolute inset-0 hidden select-none xl:block">
+          <div className="absolute left-0 top-[46%] -translate-y-1/2">
+            <HeroThumbnails variant="left" />
+          </div>
+          <div className="absolute right-4 top-[54%] -translate-y-1/2">
+            <HeroThumbnails variant="right" />
+          </div>
         </div>
 
-        <h1 className="mx-auto mt-14 max-w-[26ch] text-[clamp(1.75rem,4.6vw,2.75rem)] font-extrabold leading-[1.12] tracking-[-0.028em] text-balance sm:mt-16">
-          Save your <span className="snap-mark">Snapchat</span> memories before
-          they&rsquo;re gone
-        </h1>
+        <div className="relative z-10">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted">
+            Snapchat can start deleting memories in
+          </p>
 
-        <p className="mx-auto mt-6 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
-          Snapchat&rsquo;s export hands you a folder of undated files with the
-          captions torn off. This puts the dates, locations and captions back —
-          without uploading anything.
-        </p>
+          <div className="mt-8 sm:mt-10">
+            <Countdown />
+          </div>
 
-        <div className="mt-10 flex justify-center">
-          <ButtonLink href="#upload" className="w-full sm:w-auto">
-            Save my memories
-          </ButtonLink>
+          <h1 className="mx-auto mt-14 max-w-[26ch] text-[clamp(1.75rem,4.6vw,2.75rem)] font-extrabold leading-[1.12] tracking-[-0.028em] text-balance sm:mt-16">
+            Save your <span className="snap-mark">Snapchat</span> memories
+            before they&rsquo;re gone
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
+            Snapchat&rsquo;s export hands you a folder of undated files with the
+            captions torn off. This puts the dates, locations and captions back
+            — without uploading anything.
+          </p>
+
+          <div className="mt-10 flex justify-center">
+            <ButtonLink href="#upload" className="w-full sm:w-auto">
+              Save my memories
+            </ButtonLink>
+          </div>
+
+          <div className="pointer-events-none mt-14 flex select-none justify-center xl:hidden">
+            <HeroThumbnails variant="fan" />
+          </div>
         </div>
       </Section>
 
