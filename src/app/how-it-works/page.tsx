@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import { breadcrumbs } from "@/lib/jsonld";
 import ExportWalkthrough from "@/components/ExportWalkthrough";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { STEPS } from "@/content/steps";
@@ -13,6 +15,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/how-it-works" },
   // `openGraph` and `twitter` are replaced wholesale rather than merged, so
   // the image and card type have to be restated — leaving them out strips the
   // preview image and downgrades the card to `summary`.
@@ -35,6 +38,12 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbs([
+          { name: "Home", path: "/" },
+          { name: "How it works", path: "/how-it-works" },
+        ])}
+      />
       <Nav />
       <main>
         <Section className="pt-16 pb-20 sm:pt-24 sm:pb-24">

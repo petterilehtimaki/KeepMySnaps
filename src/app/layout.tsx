@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+import { OG_IMAGE, SITE_URL, TWITTER_CARD } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
+import { siteGraph } from "@/lib/jsonld";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -16,21 +18,11 @@ const DESCRIPTION =
 const SHARE_DESCRIPTION =
   "Restore the real dates, GPS and captions Snapchat strips out of your memories export. Runs in your browser. Nothing uploaded.";
 
-/**
- * Crawlers won't resolve a relative og:image, so this has to be absolute.
- * Vercel injects VERCEL_PROJECT_PRODUCTION_URL on every deployment; set
- * NEXT_PUBLIC_SITE_URL to override it with a custom domain.
- */
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:4000");
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
+  alternates: { canonical: "/" },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -65,7 +57,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={jakarta.variable}>
-      <body>{children}</body>
+      <body>
+        <JsonLd data={siteGraph()} />
+        {children}
+      </body>
     </html>
   );
 }
