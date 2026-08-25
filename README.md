@@ -70,13 +70,15 @@ dependency of the app.
 
 ## The paywall
 
-The first 20 files are free. Past that, `NEXT_PUBLIC_STRIPE_PAYMENT_LINK`
-points at a Stripe Payment Link whose success URL is `/?unlocked=1`; that
-parameter lifts the limit and is remembered in localStorage. See
-`.env.example`. There is deliberately no server-side verification — anyone
-determined enough to type a query parameter was never going to pay five
-dollars, and adding a backend would mean the photos stop being none of our
-business.
+The first 20 files are free. Past that, `/api/checkout` opens a Stripe
+Checkout session and Stripe returns with `?session_id=`. That id is the only
+thing kept in localStorage — not a flag — and `/api/unlock` re-verifies it
+against Stripe on every load, so editing storage by hand achieves nothing.
+Verified ids are cached in Supabase to save a round trip.
+
+None of that touches the photos. The two API routes handle a button click and
+a session id; the ZIP never leaves the tab, and the CSP in `next.config.ts`
+sets `connect-src 'self'` so it can't.
 
 ## Deadline
 

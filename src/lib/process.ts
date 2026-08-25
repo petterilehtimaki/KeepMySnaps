@@ -155,9 +155,20 @@ async function flatten(
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+/**
+ * One CSV cell, quoted where the format needs it and defused where a
+ * spreadsheet does.
+ *
+ * The filename and source columns come from names inside the ZIP, and Excel,
+ * Numbers and Sheets all treat a cell opening with `=`, `+`, `-` or `@` as a
+ * formula to run. Quoting alone doesn't stop that — they strip the quotes
+ * first — so a leading apostrophe goes in front. Anyone who opens the index
+ * expecting a list of dates should get a list of dates.
+ */
 function csvCell(value: string | number | null): string {
   if (value === null || value === "") return "";
-  const s = String(value);
+  let s = String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

@@ -50,6 +50,7 @@ ${[
   ["How it works — requesting the export, step by step", "/how-it-works"],
   ["When Snapchat can start deleting Memories, and what to do", "/september-2026-deadline"],
   ["FAQ", "/faq"],
+  ["Contact — a form, not an address", "/contact"],
   ["Privacy", "/privacy"],
   ["Terms", "/terms"],
 ]
