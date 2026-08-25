@@ -246,6 +246,43 @@ def main(paths: list[str]) -> None:
     print("  set SAME_PLACE_DEGREES in src/lib/snapchat.ts to that many degrees.")
     print()
 
+    # ------------------------------------------------- captions and overlays
+    head("Captions")
+
+    names_only = [Path(n).name for n in media]
+    bases = {}
+    overlays = {}
+    for n in names_only:
+        stem = re.sub(r"-(main|overlay)\.[a-z0-9]+$", "", n, flags=re.I)
+        if re.search(r"-overlay\.", n, re.I):
+            overlays[stem] = n
+        elif re.search(r"-main\.", n, re.I):
+            bases[stem] = n
+
+    photo_with = sum(1 for k in overlays if k in bases and not bases[k].lower().endswith((".mp4", ".mov")))
+    video_with = sum(1 for k in overlays if k in bases and bases[k].lower().endswith((".mp4", ".mov")))
+    orphan = sum(1 for k in overlays if k not in bases)
+
+    photos = sum(1 for b in bases.values() if not b.lower().endswith((".mp4", ".mov")))
+    videos = len(bases) - photos
+
+    print(f"  photos                      {photos:>6}")
+    print(f"  videos                      {videos:>6}")
+    print(f"  overlay files               {len(overlays):>6}")
+    print()
+    print(f"  photos with a caption       {photo_with:>6}   merged onto the photo")
+    print(f"  videos with a caption       {video_with:>6}   DROPPED — videos skip the merge")
+    if orphan:
+        print(f"  overlays with no base       {orphan:>6}   nothing to merge onto")
+    print()
+    total_caps = photo_with + video_with
+    if total_caps:
+        lost = video_with / total_caps * 100
+        print(f"  {video_with} of {total_caps} captions ({lost:.0f}%) are being thrown away.")
+        if lost > 20:
+            print("  That is the real gap, and it is bigger than the location one.")
+    print()
+
     # ---------------------------------------------------------- html columns
     head("Columns in the HTML report")
     for name, blob in text_blobs.items():
