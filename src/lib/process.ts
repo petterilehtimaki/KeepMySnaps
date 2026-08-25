@@ -285,10 +285,16 @@ export async function processExport(
       }
 
       if (entry) {
+        // A coordinate only goes in when we know it belongs to this photo.
+        // Snapchat's JSON has no id to join on, so several memories from the
+        // same day and the same kind are indistinguishable — and a pin in the
+        // wrong place is a worse answer than an empty GPS field, because
+        // there's no way for anyone to tell it's wrong later.
+        const placed = pairing.locationCertain;
         bytes = writeExif(bytes, {
           takenAt: entry.takenAt,
-          lat: entry.lat,
-          lon: entry.lon,
+          lat: placed ? entry.lat : null,
+          lon: placed ? entry.lon : null,
           caption: entry.caption,
         });
       }
@@ -305,15 +311,17 @@ export async function processExport(
     });
 
     if (entry?.takenAt != null) summary.datesRestored++;
-    if (entry?.lat != null) summary.gpsRestored++;
+    if (entry?.lat != null && pairing.locationCertain) summary.gpsRestored++;
     summary.filesWritten++;
 
     csv.push(
       [
         csvCell(name),
         csvCell(entry?.takenAt != null ? new Date(entry.takenAt).toISOString() : null),
-        csvCell(entry?.lat ?? null),
-        csvCell(entry?.lon ?? null),
+        // The CSV mirrors what actually went into the files, so a blank here
+        // means "Snapchat couldn't tell us", not "we forgot".
+        csvCell(pairing.locationCertain ? (entry?.lat ?? null) : null),
+        csvCell(pairing.locationCertain ? (entry?.lon ?? null) : null),
         csvCell(group.base),
       ].join(","),
     );

@@ -28,6 +28,15 @@ export type MediaGroup = {
 export type Pairing = {
   entry: MemoryEntry | null;
   group: MediaGroup;
+  /**
+   * Whether this file's coordinates are known to be its own.
+   *
+   * False when the file was matched out of a bucket of same-day, same-type
+   * memories that disagreed about where they were taken — the date is still
+   * right, but the location is a coin flip between them, and a confidently
+   * wrong pin is worse than no pin.
+   */
+  locationCertain: boolean;
 };
 
 const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "heic"]);
@@ -52,6 +61,13 @@ export function isThumbnailPath(path: string): boolean {
   return /(thumbnail|thumb|_tn\b)/i.test(path.split("/").pop() ?? "");
 }
 
+export function mediaKindOf(path: string): "image" | "video" | "unknown" {
+  const ext = extensionOf(path);
+  if (IMAGE_EXT.has(ext)) return "image";
+  if (VIDEO_EXT.has(ext)) return "video";
+  return "unknown";
+}
+
 /** `2023-06-12_B2C3~D4-main.jpg` -> `2023-06-12_b2c3~d4` */
 function groupKeyFor(path: string): string {
   const name = (path.split("/").pop() ?? path).toLowerCase();
@@ -61,6 +77,22 @@ function groupKeyFor(path: string): string {
     .replace(/[-_](main|media|overlay|overlays)$/i, "")
     .replace(/[-_]overlay[-_]?\d*$/i, "");
 }
+
+/**
+ * How far apart two memories can be and still count as the same place.
+ *
+ * 0.01° of latitude is about 1.1km. When every memory from one day and one
+ * media type falls inside that, it doesn't matter which file gets which
+ * coordinate — they all point at the same neighbourhood. Outside it, the
+ * coordinate is withheld rather than guessed, because a photo carrying the
+ * wrong pin looks exactly like one carrying the right one.
+ *
+ * Raising this keeps more pins at the cost of some being off by the new
+ * radius. Lowering it withholds more. There is no setting that produces
+ * correct coordinates for every file: Snapchat's export contains no key
+ * joining a photo to its entry, so within a day this is unknowable.
+ */
+const SAME_PLACE_DEGREES = 0.01;
 
 const DATE_IN_NAME = /(\d{4})[-_](\d{2})[-_](\d{2})/;
 
@@ -219,7 +251,7 @@ export function matchEntriesToMedia(
   groups: MediaGroup[],
 ): Pairing[] {
   const pairings = new Map<string, Pairing>(
-    groups.map((g) => [g.key, { entry: null, group: g }]),
+    groups.map((g) => [g.key, { entry: null, group: g, locationCertain: true }]),
   );
   const unusedEntries = new Set(entries);
 
@@ -248,24 +280,78 @@ export function matchEntriesToMedia(
     }
   }
 
-  // Pass 2 — same calendar day, in order.
-  const openByDate = new Map<string, MediaGroup[]>();
+  // Pass 2 — same calendar day and same kind of media.
+  //
+  // Real exports carry no id, so this is the pass that does the actual work.
+  // Bucketing on the day alone would let a .jpg take a video's timestamp; the
+  // JSON says Image or Video for every entry, and the extension says the same
+  // thing about every file, so honouring it costs nothing and removes a whole
+  // class of wrong answer. Snapchat sorts the archive by filename, and the
+  // filename is date-then-UUID, so the order inside one day is alphabetical
+  // by a random id — there is no further signal to exploit.
+  const bucketKey = (day: string, kind: string) => `${day}\u0000${kind}`;
+
+  const openByBucket = new Map<string, MediaGroup[]>();
   for (const g of groups) {
     if (pairings.get(g.key)?.entry || !g.filenameDate) continue;
-    const bucket = openByDate.get(g.filenameDate) ?? [];
+    const key = bucketKey(g.filenameDate, mediaKindOf(g.base));
+    const bucket = openByBucket.get(key) ?? [];
     bucket.push(g);
-    openByDate.set(g.filenameDate, bucket);
+    openByBucket.set(key, bucket);
+  }
+
+  // Which buckets can't distinguish their members by location. Worked out
+  // before anything is consumed, because the answer is a property of the
+  // bucket rather than of whichever file happens to be handed an entry.
+  const entriesByBucket = new Map<string, MemoryEntry[]>();
+  for (const entry of unusedEntries) {
+    if (entry.takenAt === null) continue;
+    const key = bucketKey(
+      new Date(entry.takenAt).toISOString().slice(0, 10),
+      entry.mediaType,
+    );
+    entriesByBucket.set(key, [...(entriesByBucket.get(key) ?? []), entry]);
+  }
+
+  const ambiguous = new Set<string>();
+  for (const [key, bucket] of entriesByBucket) {
+    if (bucket.length < 2) continue;
+    const placed = bucket.filter((e) => e.lat !== null);
+    // One memory with a location and one without is still ambiguous: the file
+    // that gets the placed entry might have been the unplaced one.
+    if (placed.length && placed.length !== bucket.length) {
+      ambiguous.add(key);
+      continue;
+    }
+    const spread = placed.some(
+      (e) =>
+        Math.abs(e.lat! - placed[0].lat!) > SAME_PLACE_DEGREES ||
+        Math.abs(e.lon! - placed[0].lon!) > SAME_PLACE_DEGREES,
+    );
+    if (spread) ambiguous.add(key);
   }
 
   for (const entry of [...unusedEntries]) {
     if (entry.takenAt === null) continue;
     const day = new Date(entry.takenAt).toISOString().slice(0, 10);
-    const bucket = openByDate.get(day);
-    const g = bucket?.shift();
+    // Fall back to the day-only bucket when the JSON's type is missing or
+    // disagrees with the extension, rather than dropping the memory.
+    const key = bucketKey(day, entry.mediaType);
+    let g = openByBucket.get(key)?.shift();
+    if (!g) {
+      for (const kind of ["image", "video", "unknown"]) {
+        const alt = openByBucket.get(bucketKey(day, kind));
+        if (alt?.length) {
+          g = alt.shift();
+          break;
+        }
+      }
+    }
     if (!g) continue;
     const slot = pairings.get(g.key);
     if (slot && !slot.entry) {
       slot.entry = entry;
+      slot.locationCertain = !ambiguous.has(key);
       unusedEntries.delete(entry);
     }
   }
@@ -275,7 +361,12 @@ export function matchEntriesToMedia(
   const leftovers = [...unusedEntries].reverse();
   for (let i = 0; i < openGroups.length && i < leftovers.length; i++) {
     const slot = pairings.get(openGroups[i].key);
-    if (slot) slot.entry = leftovers[i];
+    if (!slot) continue;
+    slot.entry = leftovers[i];
+    // Position within the export is the weakest signal there is. It gets the
+    // date approximately right often enough to be worth keeping; it is never
+    // good enough to stand behind a coordinate.
+    slot.locationCertain = false;
   }
 
   return groups.map((g) => pairings.get(g.key)!);
