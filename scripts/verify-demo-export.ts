@@ -1,19 +1,22 @@
 /**
- * Runs a real ZIP through the real matching pipeline and prints what came out.
+ * Runs real ZIPs through the real matching pipeline and scores the result.
  *
- * `npm test` builds its inputs in memory and never opens an archive, so this
- * is the only thing that checks the three passes in `matchEntriesToMedia`
- * against a file on disk. Point it at the demo export, or at your own — the
- * script only reads names and JSON, and prints counts rather than contents.
+ * Counting how many files came out with *a* date proves nothing — the
+ * positional fallback will hand every file some date. What matters is how many
+ * got the *right* one, and the only way to know that is to generate the export
+ * yourself and keep the answers. `make-demo-export.py` writes a `.truth.json`
+ * next to the archives for exactly this.
+ *
+ * Pass every part, the way a person would drop them all on the page at once:
  *
  *   python3 scripts/make-demo-export.py
- *   node --experimental-strip-types scripts/verify-demo-export.ts ~/Desktop/keepmysnaps-demo-export.zip
+ *   node --experimental-strip-types scripts/verify-demo-export.ts ~/Desktop/mydata~*.zip
  *
- * Exits non-zero if anything went unmatched that shouldn't have, so it is
- * usable as a smoke test before a release.
+ * Without a truth file it degrades to counting, and says so.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import JSZip from "jszip";
 import {
   groupMediaFiles,
@@ -21,57 +24,110 @@ import {
   parseMemoriesHistory,
 } from "../src/lib/snapchat.ts";
 
-const zipPath = process.argv[2];
-if (!zipPath) {
-  console.error("usage: verify-demo-export.ts <export.zip>");
+const zipPaths = process.argv.slice(2).filter((a) => a.endsWith(".zip"));
+if (!zipPaths.length) {
+  console.error("usage: verify-demo-export.ts <export.zip> [more.zip ...]");
   process.exit(2);
 }
 
-const zip = await JSZip.loadAsync(readFileSync(zipPath));
-const paths = Object.keys(zip.files).filter((p) => !zip.files[p].dir);
+// Mirror what the app does: read every ZIP, pool the paths, find the JSON
+// wherever it happens to live. Snapchat only puts it in the first part.
+const paths: string[] = [];
+let historyJson: unknown = null;
 
-const jsonPath = paths.find((p) => /memories_history\.json$/i.test(p));
-if (!jsonPath) {
-  console.error("No memories_history.json in this archive.");
-  console.error("Snapchat only includes it when 'Export JSON Files' is ticked.");
+for (const zipPath of zipPaths) {
+  const zip = await JSZip.loadAsync(readFileSync(zipPath));
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir) continue;
+    paths.push(path);
+    if (/memories_history\.json$/i.test(path)) {
+      historyJson = JSON.parse(await entry.async("string"));
+    }
+  }
+}
+
+if (!historyJson) {
+  console.error("\nNo memories_history.json in any of those ZIPs.");
+  console.error("Snapchat puts it in the first part only, and only when");
+  console.error("'Export JSON Files' was ticked. Pass every part.\n");
   process.exit(1);
 }
 
-const entries = parseMemoriesHistory(
-  JSON.parse(await zip.files[jsonPath].async("string")),
-);
+const entries = parseMemoriesHistory(historyJson);
 const groups = groupMediaFiles(paths);
 const pairs = matchEntriesToMedia(entries, groups);
-
 const matched = pairs.filter((p) => p.entry);
-const dated = matched.filter((p) => p.entry!.takenAt !== null);
-const located = matched.filter((p) => p.entry!.lat !== null);
-const captioned = matched.filter((p) => p.entry!.caption);
-const years = [
-  ...new Set(dated.map((p) => new Date(p.entry!.takenAt!).getUTCFullYear())),
-].sort();
 
 const row = (label: string, value: string | number) =>
-  console.log(`  ${label.padEnd(18)}${value}`);
+  console.log(`  ${label.padEnd(22)}${value}`);
 
-console.log(`\n${zipPath}\n`);
-row("files", paths.length);
+console.log(`\n${zipPaths.length} ZIP${zipPaths.length === 1 ? "" : "s"}, ${paths.length} files\n`);
 row("json entries", entries.length);
-row("media groups", `${groups.length}  (thumbnails and lone overlays dropped)`);
+row("  with an id", entries.filter((e) => e.mediaId).length);
+row("media groups", groups.length);
 row("with overlay", groups.filter((g) => g.overlay).length);
-row("matched", `${matched.length} / ${groups.length}`);
-row("  with a date", dated.length);
-row("  with GPS", located.length);
-row("  with a caption", captioned.length);
-row("years covered", years.length ? `${years[0]}–${years.at(-1)} (${years.length})` : "none");
-row("files unmatched", pairs.length - matched.length);
-row("entries unused", entries.length - matched.length);
+row("got some date", matched.filter((p) => p.entry!.takenAt !== null).length);
 
-// Every file the demo generator writes has a JSON entry except the deliberate
-// orphan, so anything beyond that means the matcher regressed.
-const unmatched = pairs.length - matched.length;
-if (unmatched > 1) {
-  console.error(`\n  ${unmatched} files went unmatched. Expected at most 1.\n`);
+// ---------------------------------------------------------------- scoring
+const truthPath = [...new Set(zipPaths.map(dirname))]
+  .flatMap((dir) => [join(dir, "mydata~1786724342212.truth.json")])
+  .find(existsSync);
+
+if (!truthPath) {
+  console.log("\n  No truth file alongside these ZIPs, so the numbers above are");
+  console.log("  counts, not accuracy. Generate an export with");
+  console.log("  make-demo-export.py to score the matcher properly.\n");
+  process.exit(0);
+}
+
+type Truth = { date: string; lat: number | null; lon: number | null };
+const truth: Record<string, Truth> = JSON.parse(readFileSync(truthPath, "utf8"));
+
+let exactTime = 0;
+let rightDay = 0;
+let wrongDay = 0;
+let rightPlace = 0;
+let wrongPlace = 0;
+let scored = 0;
+
+for (const pair of pairs) {
+  const answer = truth[basename(pair.group.base)];
+  if (!answer || !pair.entry) continue;
+  scored++;
+
+  const got = pair.entry.takenAt;
+  const want = Date.parse(answer.date);
+  if (got === want) exactTime++;
+  else if (got !== null && new Date(got).toISOString().slice(0, 10) === answer.date.slice(0, 10)) rightDay++;
+  else wrongDay++;
+
+  if (answer.lat === null) continue;
+  const near =
+    pair.entry.lat !== null &&
+    Math.abs(pair.entry.lat - answer.lat) < 0.0001 &&
+    Math.abs(pair.entry.lon! - answer.lon!) < 0.0001;
+  if (near) rightPlace++;
+  else wrongPlace++;
+}
+
+const pct = (n: number) => `${((n / Math.max(1, scored)) * 100).toFixed(0)}%`;
+
+console.log(`\n  scored against ground truth (${scored} files)\n`);
+row("exact timestamp", `${exactTime}  ${pct(exactTime)}`);
+row("right day, wrong time", `${rightDay}  ${pct(rightDay)}`);
+row("wrong day", `${wrongDay}  ${pct(wrongDay)}`);
+row("GPS correct", `${rightPlace} of ${rightPlace + wrongPlace}`);
+row("GPS on wrong photo", wrongPlace);
+
+const dayAccurate = exactTime + rightDay;
+console.log();
+if (wrongDay === 0 && wrongPlace === 0) {
+  console.log("  Every file got its own date and its own coordinates.\n");
+} else {
+  console.log(`  ${dayAccurate} of ${scored} land on the right calendar day.`);
+  if (wrongPlace) {
+    console.log(`  ${wrongPlace} carry another memory's coordinates.`);
+  }
+  console.log();
   process.exit(1);
 }
-console.log("\n  Matching looks right.\n");

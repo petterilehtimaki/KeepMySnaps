@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import shutil
 import subprocess
@@ -47,6 +48,9 @@ except ImportError:  # pragma: no cover - a dev-tool dependency, not the app's
 # Deterministic on purpose: re-running gives you the same archive, so a
 # screenshot taken today still matches the one you take next week.
 SEED = 20260925
+
+# The epoch-ish suffix Snapchat puts on the archive name.
+SPLIT_STAMP = "1786724342212"
 
 # Coordinates are city centres, not anybody's home. Roughly: Helsinki, Tampere,
 # Berlin, Lisbon, Reykjavik, Stockholm, Tallinn, Porto.
@@ -163,11 +167,21 @@ def make_video(path: Path, frame: Image.Image, seconds: int = 3) -> bool:
 
 
 def media_id(rng: random.Random) -> str:
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    return "".join(rng.choice(alphabet) for _ in range(12))
+    """
+    A UUID, because that is what Snapchat puts in the filename:
+    `2021-10-07_C45000BA-E542-409E-9A4E-C74223CFE277-main.jpg`.
+
+    Note what it is *not* in: the JSON. A real `memories_history.json` entry
+    carries Date, Media Type, Location and two empty download URLs, and no id
+    of any kind — so there is nothing to join this to. That is the whole reason
+    matching is hard, and an export that pretends otherwise tests nothing.
+    """
+    hexes = "0123456789ABCDEF"
+    take = lambda n: "".join(rng.choice(hexes) for _ in range(n))
+    return f"{take(8)}-{take(4)}-{take(4)}-{take(4)}-{take(12)}"
 
 
-def build(out_dir: Path, count: int) -> Path:
+def build(out_dir: Path, count: int, parts: int) -> Path:
     rng = random.Random(SEED)
     work = out_dir / "keepmysnaps-demo-export"
     if work.exists():
@@ -186,18 +200,19 @@ def build(out_dir: Path, count: int) -> Path:
     # years whether you ask for twenty memories or two hundred — an archive
     # covering one summer doesn't demonstrate the thing this tool fixes.
     now = datetime(2026, 8, 1, tzinfo=timezone.utc)
-    mean_burst = 2.2
+    mean_burst = 3.9
     mean_gap = max(4, round(8 * 365 / max(1, count / mean_burst)))
     stamps: list[datetime] = []
     cursor = now
     while len(stamps) < count:
         cursor -= timedelta(days=rng.randint(max(2, mean_gap // 3), mean_gap * 2))
-        for i in range(rng.choice([1, 1, 1, 2, 3, 4])):
+        for i in range(rng.choice([1, 2, 2, 3, 4, 5, 6, 8])):
             if len(stamps) >= count:
                 break
             stamps.append(cursor - timedelta(hours=i * rng.randint(1, 5)))
 
     entries = []
+    truth: dict[str, dict] = {}
     for index, when in enumerate(stamps):
         mid = media_id(rng)
         day = when.strftime("%Y-%m-%d")
@@ -230,11 +245,16 @@ def build(out_dir: Path, count: int) -> Path:
             )
 
         place = PLACES[index % len(PLACES)] if rng.random() < 0.85 else None
+        # Field-for-field what a 2026 export writes. No id, no caption: the
+        # captions only exist as overlay PNGs, and nothing joins an entry to a
+        # file except the date.
         entry = {
             "Date": when.strftime("%Y-%m-%d %H:%M:%S UTC"),
             "Media Type": "Video" if is_video else "Image",
-            "Media ID": mid,
+            "Download Link": "",
+            "Media Download Url": "",
         }
+        lat = lon = None
         if place:
             # A little jitter so every memory from one city isn't one pin.
             lat = place[0] + rng.uniform(-0.02, 0.02)
@@ -243,9 +263,13 @@ def build(out_dir: Path, count: int) -> Path:
         else:
             # Snapchat writes Null Island when it has nothing. The parser drops it.
             entry["Location"] = "Latitude, Longitude: 0.0, 0.0"
-        if caption:
-            entry["Caption"] = caption
         entries.append(entry)
+        truth[Path(path).name] = {
+            "date": when.isoformat(),
+            "lat": round(lat, 5) if place else None,
+            "lon": round(lon, 5) if place else None,
+            "caption": caption,
+        }
 
     # Two entries whose files never made it into the archive, and one file with
     # no entry. Both happen in real exports; both should be reported, not lost.
@@ -254,8 +278,9 @@ def build(out_dir: Path, count: int) -> Path:
         entries.append({
             "Date": ghost.strftime("%Y-%m-%d %H:%M:%S UTC"),
             "Media Type": "Image",
-            "Media ID": media_id(rng),
-            "Caption": "missing from this export",
+            "Location": "Latitude, Longitude: 0.0, 0.0",
+            "Download Link": "",
+            "Media Download Url": "",
         })
     orphan = gradient((1080, 1080), *PALETTES[3], rng)
     orphan.save(memories_dir / "2022-11-04_ORPHANFILE01-main.jpg", "JPEG", quality=88)
@@ -274,30 +299,66 @@ def build(out_dir: Path, count: int) -> Path:
     videos = sum(1 for f in media if f.suffix == ".mp4")
     photos = len(media) - videos
 
-    zip_path = out_dir / "keepmysnaps-demo-export.zip"
-    zip_path.unlink(missing_ok=True)
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file in sorted(work.rglob("*")):
-            if file.is_file():
+    by_day: dict[str, list[str]] = {}
+    for name in truth:
+        by_day.setdefault(name[:10], []).append(name)
+
+    # Snapchat splits large exports across several ZIPs: the first carries
+    # html/, index.html, json/ and a slice of memories/, and the rest carry
+    # nothing but more memories/. The JSON is only ever in the first one, which
+    # is why feeding just one part produces a pile of undated files.
+    stem = f"mydata~{SPLIT_STAMP}"
+    all_media = sorted(f for f in memories_dir.iterdir() if f.is_file())
+    per_part = math.ceil(len(all_media) / max(1, parts))
+    written: list[Path] = []
+
+    for part in range(parts):
+        slice_ = all_media[part * per_part : (part + 1) * per_part]
+        if not slice_ and part:
+            break
+        name = f"{stem}.zip" if part == 0 else f"{stem}-{part + 1}.zip"
+        zip_path = out_dir / name
+        zip_path.unlink(missing_ok=True)
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            if part == 0:
+                for extra in sorted((work / "mydata").rglob("*")):
+                    if extra.is_file() and "memories/" not in str(extra):
+                        zf.write(extra, extra.relative_to(work))
+            for file in slice_:
                 zf.write(file, file.relative_to(work))
+        written.append(zip_path)
+
+    # Ground truth, written next to the archives rather than inside them.
+    # verify-demo-export.ts scores the matcher against this — without it we can
+    # only count how many files got *a* date, not how many got the right one.
+    truth_path = out_dir / f"{stem}.truth.json"
+    truth_path.write_text(json.dumps(truth, indent=2), encoding="utf-8")
+
     shutil.rmtree(work)
 
     span = f"{stamps[-1]:%b %Y} – {stamps[0]:%b %Y}"
-    size_mb = zip_path.stat().st_size / 1_048_576
-    print(f"\n  {zip_path}")
+    total_mb = sum(p.stat().st_size for p in written) / 1_048_576
+    busiest = max(len(v) for v in by_day.values()) if by_day else 0
+    print(f"\n  {out_dir}")
+    for zp in written:
+        print(f"    {zp.name}  ({zp.stat().st_size / 1_048_576:.1f} MB)")
+    print(f"    {truth_path.name}  (ground truth — not part of the export)")
+    print()
     print(f"  {len(media)} files · {photos} photos · {videos} videos · {span}")
-    print(f"  {size_mb:.1f} MB, no EXIF, captions split into overlays — like the real thing.")
-    print("\n  Drop it on the site. Nothing in it is yours.\n")
-    return zip_path
+    print(f"  {total_mb:.1f} MB across {len(written)} ZIPs · busiest day has {busiest} memories")
+    print("  No EXIF, no Media ID in the JSON, captions split into overlays — like the real thing.")
+    print("\n  Drop all of them on the site at once. Nothing in them is yours.\n")
+    return written[0]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=Path.home() / "Desktop", help="where to write the ZIP (default: ~/Desktop)")
     ap.add_argument("--count", type=int, default=48, help="how many memories to generate (default: 48)")
+    ap.add_argument("--parts", type=int, default=3, help="how many ZIPs to split it across, the way Snapchat does (default: 3)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    build(args.out, max(1, args.count))
+    build(args.out, max(1, args.count), max(1, args.parts))
 
 
 if __name__ == "__main__":
