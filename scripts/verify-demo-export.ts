@@ -88,6 +88,7 @@ let rightDay = 0;
 let wrongDay = 0;
 let rightPlace = 0;
 let wrongPlace = 0;
+let heldBack = 0;
 let scored = 0;
 
 for (const pair of pairs) {
@@ -102,6 +103,13 @@ for (const pair of pairs) {
   else wrongDay++;
 
   if (answer.lat === null) continue;
+  // Score what the file ends up carrying, not what the JSON said. A pairing
+  // that isn't location-certain writes no coordinate at all, and that counts
+  // as held back rather than wrong — an empty GPS field is honest.
+  if (!pair.locationCertain) {
+    heldBack++;
+    continue;
+  }
   const near =
     pair.entry.lat !== null &&
     Math.abs(pair.entry.lat - answer.lat) < 0.0001 &&
@@ -116,18 +124,22 @@ console.log(`\n  scored against ground truth (${scored} files)\n`);
 row("exact timestamp", `${exactTime}  ${pct(exactTime)}`);
 row("right day, wrong time", `${rightDay}  ${pct(rightDay)}`);
 row("wrong day", `${wrongDay}  ${pct(wrongDay)}`);
-row("GPS correct", `${rightPlace} of ${rightPlace + wrongPlace}`);
-row("GPS on wrong photo", wrongPlace);
+row("GPS written, correct", rightPlace);
+row("GPS held back", `${heldBack}  (couldn't tell which photo)`);
+row("GPS written, WRONG", wrongPlace);
 
 const dayAccurate = exactTime + rightDay;
 console.log();
+console.log(`  ${dayAccurate} of ${scored} land on the right calendar day.`);
 if (wrongDay === 0 && wrongPlace === 0) {
-  console.log("  Every file got its own date and its own coordinates.\n");
-} else {
-  console.log(`  ${dayAccurate} of ${scored} land on the right calendar day.`);
-  if (wrongPlace) {
-    console.log(`  ${wrongPlace} carry another memory's coordinates.`);
+  console.log("  No file carries another memory's coordinates.");
+  if (heldBack) {
+    console.log(`  ${heldBack} were left without a location rather than guessed at.`);
   }
+  console.log();
+} else {
+  if (wrongPlace) console.log(`  ${wrongPlace} carry another memory's coordinates.`);
+  if (wrongDay) console.log(`  ${wrongDay} landed on the wrong day.`);
   console.log();
   process.exit(1);
 }

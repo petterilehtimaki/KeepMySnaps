@@ -132,3 +132,84 @@ test("never assigns one entry to two files", () => {
   const matched = pairs.filter((p) => p.entry !== null);
   assert.equal(matched.length, 1);
 });
+
+test("a photo never takes a video's timestamp on a busy day", () => {
+  // Real exports carry no Media ID, so the day is all there is to go on — but
+  // the JSON says Image or Video, and so does the extension.
+  const entries = parseMemoriesHistory({
+    "Saved Media": [
+      { Date: "2019-12-25 22:00:00 UTC", "Media Type": "Video" },
+      { Date: "2019-12-25 09:00:00 UTC", "Media Type": "Image" },
+    ],
+  });
+  const groups = groupMediaFiles([
+    // Alphabetically the jpg comes first, which is how Snapchat sorts the ZIP
+    // and the opposite of the order the JSON lists them in.
+    "m/2019-12-25_498F6BA1-main.jpg",
+    "m/2019-12-25_6B4C3410-main.mp4",
+  ]);
+  const pairs = matchEntriesToMedia(entries, groups);
+
+  const jpg = pairs.find((p) => p.group.base.endsWith(".jpg"))!;
+  const mp4 = pairs.find((p) => p.group.base.endsWith(".mp4"))!;
+  assert.equal(jpg.entry?.mediaType, "image");
+  assert.equal(mp4.entry?.mediaType, "video");
+});
+
+test("withholds a coordinate it can't pin to one photo", () => {
+  // Two photos, same day, kilometres apart. Which is which is unknowable, so
+  // neither should end up carrying the other's location.
+  const entries = parseMemoriesHistory({
+    "Saved Media": [
+      {
+        Date: "2021-10-09 20:00:00 UTC",
+        "Media Type": "Image",
+        Location: "Latitude, Longitude: 60.16952, 24.93545",
+      },
+      {
+        Date: "2021-10-09 10:00:00 UTC",
+        "Media Type": "Image",
+        Location: "Latitude, Longitude: 60.45000, 24.10000",
+      },
+    ],
+  });
+  const groups = groupMediaFiles([
+    "m/2021-10-09_AAAA1111-main.jpg",
+    "m/2021-10-09_BBBB2222-main.jpg",
+  ]);
+  const pairs = matchEntriesToMedia(entries, groups);
+
+  assert.equal(pairs.length, 2);
+  assert.ok(pairs.every((p) => p.entry));
+  assert.ok(
+    pairs.every((p) => !p.locationCertain),
+    "both were matched by day alone, so neither location is trustworthy",
+  );
+});
+
+test("keeps the coordinate when the day's memories share a place", () => {
+  const entries = parseMemoriesHistory({
+    "Saved Media": [
+      {
+        Date: "2021-10-09 20:00:00 UTC",
+        "Media Type": "Image",
+        Location: "Latitude, Longitude: 60.16952, 24.93545",
+      },
+      {
+        Date: "2021-10-09 10:00:00 UTC",
+        "Media Type": "Image",
+        Location: "Latitude, Longitude: 60.17100, 24.93800",
+      },
+    ],
+  });
+  const groups = groupMediaFiles([
+    "m/2021-10-09_AAAA1111-main.jpg",
+    "m/2021-10-09_BBBB2222-main.jpg",
+  ]);
+  const pairs = matchEntriesToMedia(entries, groups);
+
+  assert.ok(
+    pairs.every((p) => p.locationCertain),
+    "a few hundred metres apart is the same place; the pin stands either way",
+  );
+});
