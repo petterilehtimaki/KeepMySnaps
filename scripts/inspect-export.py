@@ -184,6 +184,71 @@ def main(paths: list[str]) -> None:
             )
             print(f"    rows with BOTH a file ref and a date:  {both} of {len(row_html)}")
 
+    # ------------------------------------------ what the caution actually costs
+    head("How many locations survive")
+    from datetime import datetime
+
+    base = [n for n in media if not re.search(r"overlay|thumbnail", Path(n).name, re.I)]
+    print(f"  entries in the json         {len(entries)}")
+    print(f"  media files behind them     {len(base)}")
+    gap = len(entries) - len(base)
+    if gap > 0:
+        print(f"  entries with no file        {gap}  ({gap / max(1, len(entries)) * 100:.1f}%)")
+        print("                              Snapchat listed these memories but")
+        print("                              didn't ship them. Nothing to fix.")
+
+    # Group the entries the way the matcher does — day plus media type — and
+    # ask, for each group, whether the memories in it were close enough
+    # together that it doesn't matter which file gets which coordinate.
+    SAME_PLACE = 0.01                       # matches SAME_PLACE_DEGREES
+
+    groups: dict[tuple, list[tuple]] = {}
+    for e in entries:
+        d = e.get("Date")
+        if not isinstance(d, str) or len(d) < 10:
+            continue
+        kind = "video" if "video" in str(e.get("Media Type", "")).lower() else "image"
+        nums = re.findall(r"-?\d+\.\d+", str(e.get("Location", "")))
+        pt = (float(nums[0]), float(nums[1])) if len(nums) >= 2 else None
+        if pt == (0.0, 0.0):
+            pt = None
+        groups.setdefault((d[:10], kind), []).append(pt)
+
+    alone = kept = withheld = nolocation = 0
+    for members in groups.values():
+        placed = [p for p in members if p]
+        if not placed:
+            nolocation += len(members)
+            continue
+        if len(members) == 1:
+            alone += 1
+            continue
+        if len(placed) != len(members):
+            withheld += len(members)
+            continue
+        spread = any(abs(p[0] - placed[0][0]) > SAME_PLACE
+                     or abs(p[1] - placed[0][1]) > SAME_PLACE for p in placed)
+        if spread:
+            withheld += len(members)
+        else:
+            kept += len(members)
+
+    total = alone + kept + withheld + nolocation
+    pct = lambda n: f"{n / max(1, total) * 100:.1f}%"
+    print()
+    print(f"  only memory of its day+type {alone:>6}  {pct(alone)}   keeps its exact pin")
+    print(f"  day's memories same place   {kept:>6}  {pct(kept)}   keeps its pin")
+    print(f"  day's memories spread out   {withheld:>6}  {pct(withheld)}   pin withheld")
+    print(f"  no location recorded        {nolocation:>6}  {pct(nolocation)}   nothing to write")
+    print()
+    survive = alone + kept
+    have = total - nolocation
+    if have:
+        print(f"  {survive} of {have} memories that have a location keep it ({survive / have * 100:.0f}%).")
+        if withheld / max(1, have) > 0.4:
+            print("  That is a lot to lose. Widening SAME_PLACE_DEGREES would keep more,")
+            print("  at the cost of some pins being off by the wider radius.")
+
     # ---------------------------------------------------------- html columns
     head("Columns in the HTML report")
     for name, blob in text_blobs.items():
