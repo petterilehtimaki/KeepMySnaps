@@ -123,21 +123,66 @@ def main(paths: list[str]) -> None:
     print(f"  with a UUID in the name:    {len(file_uuids)}")
 
     if file_uuids:
-        haystack = "\n".join(text_blobs.values()).upper()
-        sample = file_uuids[: min(200, len(file_uuids))]
-        hits = sum(1 for u in sample if u.upper() in haystack)
-        print(f"  checked against metadata:   {len(sample)}")
-        print(f"  found in the metadata:      {hits}")
+        # Spread the sample across the whole export rather than taking the
+        # first N. The archive is ordered by date, so the first 200 are all
+        # from the oldest weeks — and a metadata file that only covers recent
+        # memories would look like a near-total miss.
+        step = max(1, len(file_uuids) // 400)
+        sample = file_uuids[::step][:400]
+
+        per_file = {name: blob.upper() for name, blob in text_blobs.items()}
+        hits_by_file = Counter()
+        for u in sample:
+            needle = u.upper()
+            for name, blob in per_file.items():
+                if needle in blob:
+                    hits_by_file[name] += 1
+
+        total_hit = sum(1 for u in sample
+                        if any(u.upper() in b for b in per_file.values()))
+        print(f"  sampled evenly across all:  {len(sample)}")
+        print(f"  found in the metadata:      {total_hit}")
+        if hits_by_file:
+            print("\n  where:")
+            for name, n in hits_by_file.most_common():
+                print(f"    {name:<40} {n} of {len(sample)}")
         print()
-        if hits == 0:
-            print("  VERDICT: no join exists. Nothing in the JSON or HTML references")
-            print("  the id in the filename, so a file can only be tied to an entry")
-            print("  by its date.")
-        elif hits == len(sample):
-            print("  VERDICT: every file's id is present in the metadata. A direct")
-            print("  join is possible and matching should use it.")
+        if total_hit == 0:
+            print("  VERDICT: no join exists. Nothing references the filename id,")
+            print("  so a file can only be tied to an entry by its date.")
+        elif total_hit >= len(sample) * 0.95:
+            print("  VERDICT: the filename id is present throughout. A direct join")
+            print("  is possible and matching should use it.")
         else:
-            print(f"  VERDICT: partial — {hits} of {len(sample)}. Worth using where present.")
+            print(f"  VERDICT: partial — {total_hit} of {len(sample)}.")
+
+    # ------------------------------------------- what the HTML actually holds
+    head("Shape of each HTML file")
+    for name, blob in sorted(text_blobs.items()):
+        if not name.lower().endswith((".html", ".htm")):
+            continue
+        rows = len(re.findall(r"<tr\b", blob, re.I))
+        links = re.findall(r'(?:href|src)="([^"]+)"', blob, re.I)
+        local = [l for l in links if not l.startswith(("http://", "https://", "#", "data:"))]
+        media_refs = [l for l in local if re.search(r"\.(jpg|jpeg|png|mp4|mov|webp)$", l, re.I)]
+        uuid_refs = sum(1 for l in local if UUID.search(l))
+        print(f"\n  {name}")
+        print(f"    <tr> rows                 {rows}")
+        print(f"    local links/srcs          {len(local)}")
+        print(f"    pointing at media files   {len(media_refs)}")
+        print(f"    containing a UUID         {uuid_refs}")
+        if media_refs:
+            ex = media_refs[0]
+            print(f"    example ref shape         {re.sub(r'[0-9A-F]{8}-[0-9A-F-]+', '<UUID>', ex, flags=re.I)}")
+        # Do those references sit next to a date in the same row?
+        if rows and media_refs:
+            row_html = re.findall(r"<tr\b.*?</tr>", blob, re.I | re.S)[:400]
+            both = sum(
+                1 for r in row_html
+                if re.search(r"\.(jpg|jpeg|png|mp4|mov)", r, re.I)
+                and re.search(r"\d{4}-\d{2}-\d{2}", r)
+            )
+            print(f"    rows with BOTH a file ref and a date:  {both} of {len(row_html)}")
 
     # ---------------------------------------------------------- html columns
     head("Columns in the HTML report")
