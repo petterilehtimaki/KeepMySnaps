@@ -231,7 +231,9 @@ export async function processExport(
   const out = new JSZip();
   const folder = out.folder("KeepMySnaps")!;
   const used = new Set<string>();
-  const csv: string[] = ["filename,taken_at_utc,latitude,longitude,source_file"];
+  const csv: string[] = [
+    "filename,taken_at_utc,latitude,longitude,location_precision,source_file",
+  ];
 
   const summary: Summary = {
     totalMemories: entries.length,
@@ -285,16 +287,14 @@ export async function processExport(
       }
 
       if (entry) {
-        // A coordinate only goes in when we know it belongs to this photo.
-        // Snapchat's JSON has no id to join on, so several memories from the
-        // same day and the same kind are indistinguishable — and a pin in the
-        // wrong place is a worse answer than an empty GPS field, because
-        // there's no way for anyone to tell it's wrong later.
-        const placed = pairing.locationCertain;
+        // Snapchat's JSON has no id to join on, so within a day the files
+        // are interchangeable. `location` is what the matcher could stand
+        // behind: this memory's own coordinates, or the centre of the ones it
+        // couldn't be told apart from, or nothing.
         bytes = writeExif(bytes, {
           takenAt: entry.takenAt,
-          lat: placed ? entry.lat : null,
-          lon: placed ? entry.lon : null,
+          lat: pairing.location?.lat ?? null,
+          lon: pairing.location?.lon ?? null,
           caption: entry.caption,
         });
       }
@@ -311,7 +311,7 @@ export async function processExport(
     });
 
     if (entry?.takenAt != null) summary.datesRestored++;
-    if (entry?.lat != null && pairing.locationCertain) summary.gpsRestored++;
+    if (pairing.location) summary.gpsRestored++;
     summary.filesWritten++;
 
     csv.push(
@@ -319,9 +319,11 @@ export async function processExport(
         csvCell(name),
         csvCell(entry?.takenAt != null ? new Date(entry.takenAt).toISOString() : null),
         // The CSV mirrors what actually went into the files, so a blank here
-        // means "Snapchat couldn't tell us", not "we forgot".
-        csvCell(pairing.locationCertain ? (entry?.lat ?? null) : null),
-        csvCell(pairing.locationCertain ? (entry?.lon ?? null) : null),
+        // means "Snapchat couldn't tell us", not "we forgot". The precision
+        // column says whether the pin is this memory's own.
+        csvCell(pairing.location?.lat ?? null),
+        csvCell(pairing.location?.lon ?? null),
+        pairing.location ? (pairing.location.exact ? "exact" : "approximate") : "",
         csvCell(group.base),
       ].join(","),
     );
@@ -336,6 +338,12 @@ export async function processExport(
       `Files in here: ${summary.filesWritten}`,
       `Dates restored: ${summary.datesRestored}`,
       `Locations restored: ${summary.gpsRestored}`,
+      "",
+      "Snapchat's export doesn't say which photo goes with which entry in its",
+      "list, so when several memories share a day we can't always tell them",
+      "apart. Those get the centre of where that day's memories were, marked",
+      "\"approximate\" in the CSV. Where the day was spread too far for a centre",
+      "to mean anything, the location is left out rather than guessed at.",
       `Captions flattened onto photos: ${summary.overlaysMerged}`,
       `Videos (renamed and timestamped — video files can't hold EXIF): ${summary.videos}`,
       "",

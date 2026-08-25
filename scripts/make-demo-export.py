@@ -211,6 +211,13 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
                 break
             stamps.append(cursor - timedelta(hours=i * rng.randint(1, 5)))
 
+    # Each calendar day gets one town, chosen once. Occasional travel days
+    # still happen because consecutive days draw independently.
+    day_place = {
+        d: PLACES[rng.randrange(len(PLACES))]
+        for d in {w.strftime("%Y-%m-%d") for w in stamps}
+    }
+
     entries = []
     truth: dict[str, dict] = {}
     for index, when in enumerate(stamps):
@@ -244,7 +251,11 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
                 memories_dir / f"{stem}-thumbnail.jpg", "JPEG", quality=70
             )
 
-        place = PLACES[index % len(PLACES)] if rng.random() < 0.85 else None
+        # One place per day, not per memory. People spend a day in a town and
+        # move around inside it; they do not bounce between countries between
+        # snaps. Getting this wrong made the matcher look far worse than it is,
+        # because every day looked like a day spent in two cities.
+        place = day_place[day] if rng.random() < 0.85 else None
         # Field-for-field what a 2026 export writes. No id, no caption: the
         # captions only exist as overlay PNGs, and nothing joins an entry to a
         # file except the date.
@@ -257,8 +268,9 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
         lat = lon = None
         if place:
             # A little jitter so every memory from one city isn't one pin.
-            lat = place[0] + rng.uniform(-0.02, 0.02)
-            lon = place[1] + rng.uniform(-0.02, 0.02)
+            # A few hundred metres of moving about, plus GPS noise.
+            lat = place[0] + rng.uniform(-0.004, 0.004)
+            lon = place[1] + rng.uniform(-0.008, 0.008)
             entry["Location"] = f"Latitude, Longitude: {lat:.5f}, {lon:.5f}"
         else:
             # Snapchat writes Null Island when it has nothing. The parser drops it.
