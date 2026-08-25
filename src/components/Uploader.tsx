@@ -302,7 +302,13 @@ function Result({
     { label: "Files", value: summary.filesWritten },
     { label: "Dates", value: summary.datesRestored },
     { label: "Locations", value: summary.gpsRestored },
-    { label: "Captions", value: summary.overlaysMerged },
+    {
+      label: "Captions",
+      value:
+        summary.overlaysMerged +
+        summary.videoCaptionsBurned +
+        summary.videoCaptionsKept,
+    },
   ];
 
   return (
@@ -316,6 +322,24 @@ function Result({
             ? `Including ${summary.videos} ${summary.videos === 1 ? "video" : "videos"} — those get the right filename and timestamp, since video files can't carry EXIF.`
             : "Every photo now carries its real capture date and location."}
         </p>
+        {summary.videoCaptionsBurned > 0 && (
+          <p className="mx-auto mt-3 max-w-[46ch] text-[0.875rem] leading-[1.6] text-muted-cool">
+            {summary.videoCaptionsBurned} video{" "}
+            {summary.videoCaptionsBurned === 1 ? "caption" : "captions"} drawn
+            back into the video itself, frame by frame, on this machine.
+          </p>
+        )}
+        {summary.videoCaptionsKept > 0 && (
+          // Say it here rather than only in the README. A caption sitting in a
+          // folder nobody opens is barely better than a deleted one.
+          <p className="mx-auto mt-3 max-w-[46ch] text-[0.875rem] leading-[1.6] text-muted-cool">
+            {summary.videoCaptionsKept} couldn&rsquo;t be drawn in and{" "}
+            {summary.videoCaptionsKept === 1 ? "is" : "are"} in the{" "}
+            <span className="font-semibold text-ink">captions</span> folder
+            instead, named to match {summary.videoCaptionsKept === 1 ? "its" : "their"}{" "}
+            video.
+          </p>
+        )}
       </div>
 
       <div className="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-4">

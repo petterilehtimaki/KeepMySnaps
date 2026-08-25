@@ -16,6 +16,7 @@ import {
   type Pairing,
 } from "./snapchat";
 import { writeExif, isJpeg } from "./exif";
+import { burnOverlayIntoVideo, canRewriteVideo } from "./video";
 
 export class NotASnapchatExport extends Error {}
 
@@ -33,6 +34,16 @@ export type Summary = {
   gpsRestored: number;
   overlaysMerged: number;
   videos: number;
+  /** Video captions drawn into the video itself. */
+  videoCaptionsBurned: number;
+  /**
+   * Video captions saved beside their video instead of drawn in.
+   *
+   * The fallback for browsers without WebCodecs and for files the encoder
+   * won't take. Worse than a finished video, far better than a deleted
+   * caption.
+   */
+  videoCaptionsKept: number;
   unmatched: number;
   /** Files present in the export beyond the ones written to this ZIP. */
   withheld: number;
@@ -54,6 +65,19 @@ function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
+/** `2023-06-12_18-04-22` — the capture time, or a counter when there isn't one. */
+function stemFor(entry: MemoryEntry | null, index: number): string {
+  if (entry?.takenAt === null || entry?.takenAt === undefined) {
+    return `undated_${String(index + 1).padStart(5, "0")}`;
+  }
+  const d = new Date(entry.takenAt);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}` +
+    `_${p(d.getUTCHours())}-${p(d.getUTCMinutes())}-${p(d.getUTCSeconds())}`
+  );
+}
+
 /** `2023-06-12_18-04-22.jpg`, deduped when two snaps share a second. */
 function outputName(
   entry: MemoryEntry | null,
@@ -61,17 +85,7 @@ function outputName(
   index: number,
   used: Set<string>,
 ): string {
-  let stem: string;
-  if (entry?.takenAt !== null && entry?.takenAt !== undefined) {
-    const d = new Date(entry.takenAt);
-    const p = (n: number) => String(n).padStart(2, "0");
-    stem =
-      `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}` +
-      `_${p(d.getUTCHours())}-${p(d.getUTCMinutes())}-${p(d.getUTCSeconds())}`;
-  } else {
-    stem = `undated_${String(index + 1).padStart(5, "0")}`;
-  }
-
+  const stem = stemFor(entry, index);
   let name = `${stem}.${ext}`;
   let n = 2;
   while (used.has(name)) name = `${stem}_${n++}.${ext}`;
@@ -231,6 +245,8 @@ export async function processExport(
   const out = new JSZip();
   const folder = out.folder("KeepMySnaps")!;
   const used = new Set<string>();
+  const usedCaptions = new Set<string>();
+  let captions: JSZip | null = null;
   const csv: string[] = [
     "filename,taken_at_utc,latitude,longitude,location_precision,source_file",
   ];
@@ -242,6 +258,8 @@ export async function processExport(
     gpsRestored: 0,
     overlaysMerged: 0,
     videos: 0,
+    videoCaptionsBurned: 0,
+    videoCaptionsKept: 0,
     unmatched: pairings.filter((p) => !p.entry).length,
     withheld: Math.max(0, pairings.length - selected.length),
   };
@@ -300,6 +318,57 @@ export async function processExport(
       }
     } else {
       summary.videos++;
+
+      // Two thirds of the captions in a real export belong to videos, and a
+      // video has nowhere to keep a picture — so the only way to make the
+      // caption part of the file is to decode it, draw the overlay on every
+      // frame and encode it again. If that can't be done, the PNG goes in a
+      // folder of its own rather than being dropped.
+      const overlayObj = group.overlay
+        ? (zipForPath.get(group.overlay)?.file(group.overlay) ?? null)
+        : null;
+
+      if (overlayObj) {
+        const overlayBytes = new Uint8Array(
+          await overlayObj.async("arraybuffer"),
+        ) as Uint8Array;
+
+        let burned: Uint8Array | null = null;
+        if (canRewriteVideo()) {
+          report({
+            phase: "fixing",
+            done: i,
+            total: selected.length,
+            label: `Drawing caption into video ${summary.videos}`,
+          });
+          let bitmap: ImageBitmap | null = null;
+          try {
+            bitmap = await decode(overlayBytes, "image/png");
+            burned = await burnOverlayIntoVideo(bytes, bitmap, signal);
+          } catch {
+            burned = null;
+          } finally {
+            bitmap?.close();
+          }
+        }
+
+        if (burned) {
+          bytes = burned;
+          outExt = "mp4";
+          summary.videoCaptionsBurned++;
+        } else {
+          captions ??= folder.folder("captions")!;
+          captions.file(
+            outputName(entry, "png", i, usedCaptions).replace(
+              /\.png$/,
+              "-caption.png",
+            ),
+            overlayBytes,
+            { date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined },
+          );
+          summary.videoCaptionsKept++;
+        }
+      }
     }
 
     const name = outputName(entry, outExt, i, used);
@@ -345,6 +414,20 @@ export async function processExport(
       "\"approximate\" in the CSV. Where the day was spread too far for a centre",
       "to mean anything, the location is left out rather than guessed at.",
       `Captions flattened onto photos: ${summary.overlaysMerged}`,
+      ...(summary.videoCaptionsBurned
+        ? [`Captions drawn into videos: ${summary.videoCaptionsBurned}`]
+        : []),
+      ...(summary.videoCaptionsKept
+        ? [
+            `Captions saved beside videos: ${summary.videoCaptionsKept}`,
+            "",
+            "Snapchat ships a video's caption as a separate transparent PNG.",
+            "Most are drawn back into the video itself. These ones couldn't be",
+            "— either this browser has no video encoder, or the file wasn't one",
+            "it would take — so they're in the captions/ folder, named to match",
+            "their video, rather than lost.",
+          ]
+        : []),
       `Videos (renamed and timestamped — video files can't hold EXIF): ${summary.videos}`,
       "",
       "Photos carry EXIF DateTimeOriginal and GPS, so Google Photos, Apple",
