@@ -31,7 +31,12 @@ const csp = [
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // `blob:` here is not a loosening: a blob URL points at bytes this page
+  // already created in its own memory, so it is not a route data can leave
+  // by. It is included because reading back the finished ZIP — for a preview,
+  // a checksum, anything — is an obvious thing to write and would otherwise
+  // fail as a confusing product bug rather than an obvious policy error.
+  "connect-src 'self' blob:",
   "worker-src 'self' blob:",
   "upgrade-insecure-requests",
 ].join("; ");
