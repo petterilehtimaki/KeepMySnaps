@@ -65,6 +65,14 @@ PLACES = [
     (41.15794, -8.62918),
 ]
 
+# Place names for geofilter-style overlays. Snapchat renders these into the
+# same transparent PNG as the text and the stickers, which is why restoring
+# that one layer restores all of it.
+PLACE_NAMES = [
+    "SEINÄJOKI", "HELSINKI", "TAMPERE", "VAASA", "OULU",
+    "TURKU", "JYVÄSKYLÄ", "KUOPIO", "LAPPEENRANTA", "PORI",
+]
+
 # Short, ordinary, and about nobody.
 CAPTIONS = [
     "3am", "beach day", "finally", "the good table", "day one",
@@ -124,24 +132,48 @@ def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def overlay_png(size: tuple[int, int], text: str) -> bytes:
+def overlay_png(size: tuple[int, int], text: str, place: str | None = None) -> bytes:
     """
-    A caption overlay: transparent everywhere except the text bar.
+    The overlay layer: transparent everywhere except what was drawn on top.
 
-    This is the shape that makes exported photos look bare — Snapchat ships the
-    caption as its own file and never puts it back.
+    Snapchat composes the caption, the stickers, the drawings and the location
+    filter into this single PNG, which is exactly why exported photos look bare
+    and why putting this one file back restores all of it at once. Both styles
+    below land in the same layer for that reason.
     """
     w, h = size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     pen = ImageDraw.Draw(img)
-    font = load_font(max(22, w // 16))
 
-    box = pen.textbbox((0, 0), text, font=font)
-    tw, th = box[2] - box[0], box[3] - box[1]
-    bar_h = th + h // 22
-    top = int(h * 0.62)
-    pen.rectangle((0, top, w, top + bar_h), fill=(0, 0, 0, 130))
-    pen.text(((w - tw) / 2 - box[0], top + (bar_h - th) / 2 - box[1]), text, font=font, fill=(255, 255, 255, 255))
+    if text:
+        font = load_font(max(22, w // 16))
+        box = pen.textbbox((0, 0), text, font=font)
+        tw, th = box[2] - box[0], box[3] - box[1]
+        bar_h = th + h // 22
+        top = int(h * 0.62)
+        pen.rectangle((0, top, w, top + bar_h), fill=(0, 0, 0, 130))
+        pen.text(
+            ((w - tw) / 2 - box[0], top + (bar_h - th) / 2 - box[1]),
+            text, font=font, fill=(255, 255, 255, 255),
+        )
+
+    if place:
+        # A geofilter: the place name across the frame, no bar behind it, with
+        # a rule above and below. No box to hide behind means the shadow is
+        # what keeps it readable over a bright photo — same as the real ones.
+        gf = load_font(max(26, w // 11))
+        spaced = " ".join(place)
+        box = pen.textbbox((0, 0), spaced, font=gf)
+        tw, th = box[2] - box[0], box[3] - box[1]
+        y = int(h * 0.80)
+        x = (w - tw) / 2 - box[0]
+        for dx, dy in ((2, 2), (-2, 2), (2, -2), (-2, -2)):
+            pen.text((x + dx, y + dy - box[1]), spaced, font=gf, fill=(0, 0, 0, 90))
+        pen.text((x, y - box[1]), spaced, font=gf, fill=(255, 255, 255, 245))
+        rule_w = min(w - 80, tw + 80)
+        rx = (w - rule_w) / 2
+        pen.rectangle((rx, y - th * 0.55, rx + rule_w, y - th * 0.55 + 3), fill=(255, 255, 255, 200))
+        pen.rectangle((rx, y + th * 1.35, rx + rule_w, y + th * 1.35 + 3), fill=(255, 255, 255, 200))
 
     out = BytesIO()
     img.save(out, "PNG")
@@ -241,9 +273,15 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
             frame.save(path, "JPEG", quality=88)
 
         caption = None
-        if rng.random() < 0.6:
+        geofilter = None
+        if rng.random() < 0.62:
             caption = CAPTIONS[(index * 7) % len(CAPTIONS)]
-            (memories_dir / f"{stem}-overlay.png").write_bytes(overlay_png(size, caption))
+        if rng.random() < 0.3:
+            geofilter = PLACE_NAMES[(index * 3) % len(PLACE_NAMES)]
+        if caption or geofilter:
+            (memories_dir / f"{stem}-overlay.png").write_bytes(
+                overlay_png(size, caption or "", geofilter)
+            )
 
         # Thumbnails exist in real exports and must be ignored, so ship some.
         if index % 5 == 0:
@@ -281,6 +319,7 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
             "lat": round(lat, 5) if place else None,
             "lon": round(lon, 5) if place else None,
             "caption": caption,
+            "geofilter": geofilter,
         }
 
     # Two entries whose files never made it into the archive, and one file with
