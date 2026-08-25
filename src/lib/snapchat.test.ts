@@ -182,8 +182,8 @@ test("withholds a coordinate it can't pin to one photo", () => {
   assert.equal(pairs.length, 2);
   assert.ok(pairs.every((p) => p.entry));
   assert.ok(
-    pairs.every((p) => !p.locationCertain),
-    "both were matched by day alone, so neither location is trustworthy",
+    pairs.every((p) => p.location === null),
+    "kilometres apart has no meaningful centre, so neither gets a pin",
   );
 });
 
@@ -209,7 +209,9 @@ test("keeps the coordinate when the day's memories share a place", () => {
   const pairs = matchEntriesToMedia(entries, groups);
 
   assert.ok(
-    pairs.every((p) => p.locationCertain),
-    "a few hundred metres apart is the same place; the pin stands either way",
+    pairs.every((p) => p.location && !p.location.exact),
+    "close enough to share the centre, and flagged as an approximation",
   );
+  // The centre of 60.16952 and 60.17100.
+  assert.ok(Math.abs(pairs[0].location!.lat - 60.17026) < 0.0001);
 });

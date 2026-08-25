@@ -106,15 +106,17 @@ for (const pair of pairs) {
   // Score what the file ends up carrying, not what the JSON said. A pairing
   // that isn't location-certain writes no coordinate at all, and that counts
   // as held back rather than wrong — an empty GPS field is honest.
-  if (!pair.locationCertain) {
+  if (!pair.location) {
     heldBack++;
     continue;
   }
-  const near =
-    pair.entry.lat !== null &&
-    Math.abs(pair.entry.lat - answer.lat) < 0.0001 &&
-    Math.abs(pair.entry.lon! - answer.lon!) < 0.0001;
-  if (near) rightPlace++;
+  // An approximate pin counts as correct while it stays inside the ceiling
+  // the matcher promised; past that it is simply wrong.
+  const off = Math.max(
+    Math.abs(pair.location.lat - answer.lat),
+    Math.abs(pair.location.lon - answer.lon!),
+  );
+  if (off <= 0.05) rightPlace++;
   else wrongPlace++;
 }
 
@@ -124,9 +126,9 @@ console.log(`\n  scored against ground truth (${scored} files)\n`);
 row("exact timestamp", `${exactTime}  ${pct(exactTime)}`);
 row("right day, wrong time", `${rightDay}  ${pct(rightDay)}`);
 row("wrong day", `${wrongDay}  ${pct(wrongDay)}`);
-row("GPS written, correct", rightPlace);
+row("GPS within 5.5km", rightPlace);
 row("GPS held back", `${heldBack}  (couldn't tell which photo)`);
-row("GPS written, WRONG", wrongPlace);
+row("GPS further off", wrongPlace);
 
 const dayAccurate = exactTime + rightDay;
 console.log();
