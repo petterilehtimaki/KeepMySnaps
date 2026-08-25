@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test 'src/lib/*.test.ts'"
+    "test": "node --test 'src/lib/*.test.ts'",
+    "demo:make": "python3 scripts/make-demo-export.py",
+    "demo:verify": "node --experimental-strip-types scripts/verify-demo-export.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",

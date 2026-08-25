@@ -45,6 +45,29 @@ what the filesystem picks up on extract.
 Output is one ZIP containing the fixed media, a `keepmysnaps-index.csv` of
 every date and coordinate, and a README.
 
+## A demo export
+
+`scripts/make-demo-export.py` builds a ZIP shaped exactly like Snapchat's —
+same layout, same filename convention, same `memories_history.json` — out of
+generated abstract images and invented captions. Nothing in it belongs to
+anybody, which is the point: screen-recording the tool working shouldn't mean
+putting your own photos on camera.
+
+```bash
+npm run demo:make
+npm run demo:verify -- ~/Desktop/keepmysnaps-demo-export.zip
+```
+
+It includes the awkward cases on purpose — overlays apart from their base,
+thumbnails to ignore, entries with no file, a file with no entry, memories at
+Null Island. The verifier runs the archive through the real matching passes and
+exits non-zero if anything went unmatched that shouldn't have, which is the
+only end-to-end check there is: the unit tests build their inputs in memory and
+never open a ZIP.
+
+Needs Pillow (`pip install pillow`) and, for the videos, ffmpeg. Neither is a
+dependency of the app.
+
 ## The paywall
 
 The first 20 files are free. Past that, `NEXT_PUBLIC_STRIPE_PAYMENT_LINK`
