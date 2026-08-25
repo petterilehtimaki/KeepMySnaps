@@ -28,6 +28,7 @@ from collections import Counter
 from pathlib import Path
 
 UUID = re.compile(r"[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}", re.I)
+DECIMAL = re.compile(r"-?\d+\.\d{4,}")
 MEDIA_REF = re.compile(r'(?:href|src)="([^"]*?\.(?:jpg|jpeg|png|mp4|mov|webp))"', re.I)
 DATE_IN_NAME = re.compile(r"(\d{4}-\d{2}-\d{2})")
 TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}")
@@ -95,8 +96,10 @@ def main(argv: list[str]) -> None:
 
     head("Does it carry anything the filename doesn't?")
     joined = "\n".join(h for _, h in pages)
-    print(f"  full timestamps (HH:MM:SS) present   {len(TIMESTAMP.findall(joined))}")
-    print(f"  decimal coordinate-looking numbers   {len(re.findall(r'-?\\d+\\.\\d{4,}', joined))}")
+    stamps = len(TIMESTAMP.findall(joined))
+    print(f"  full timestamps (HH:MM:SS) present   {stamps}")
+    coords = len(DECIMAL.findall(joined))
+    print(f"  decimal coordinate-looking numbers   {coords}")
 
     # -------------------------------------------------- the decisive comparison
     head("Does link order match memories_history.json order?")
