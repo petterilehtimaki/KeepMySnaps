@@ -16,7 +16,8 @@
  */
 
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
-import type { ISOFile, Movie, Sample } from "mp4box";
+import type { ISOFile, Matrix, Movie, Sample } from "mp4box";
+import { drawCovering } from "./compose";
 
 type Track = {
   id: number;
@@ -136,6 +137,27 @@ async function demux(bytes: Uint8Array): Promise<{
   });
 }
 
+/**
+ * The clockwise rotation a player is meant to apply, from the track matrix.
+ *
+ * Snapchat records portrait and stores the frames landscape with a -90 flag,
+ * so a 540x960 snap arrives as a 960x540 track. Decoded frames come out
+ * unrotated: draw them as-is and the video is on its side, and an overlay
+ * authored portrait gets stretched across a landscape frame.
+ *
+ * The matrix is 16.16 fixed point, so the top-left pair is enough to tell the
+ * four right-angle cases apart.
+ */
+function rotationOf(matrix: Matrix | undefined): 0 | 90 | 180 | 270 {
+  if (!matrix || matrix.length < 4) return 0;
+  const a = Number(matrix[0]) / 65536;
+  const b = Number(matrix[1]) / 65536;
+  if (Math.round(a) === 0 && Math.round(b) === 1) return 90;
+  if (Math.round(a) === -1 && Math.round(b) === 0) return 180;
+  if (Math.round(a) === 0 && Math.round(b) === -1) return 270;
+  return 0;
+}
+
 /** Frames per second, from the track's own duration rather than guessed. */
 function sourceFps(video: Track, track: { duration: number; timescale: number }): number {
   const seconds = track.duration / track.timescale;
@@ -162,9 +184,15 @@ export async function burnOverlayIntoVideo(
   const { video, audio } = parsed;
 
   const track = parsed.info.videoTracks[0];
+  const rotation = rotationOf(track.matrix);
+  const upright = rotation === 90 || rotation === 270;
+
+  // Output in the orientation the video is meant to be seen in, so the file
+  // needs no rotation flag and the overlay lines up with what was on screen.
   // Encoders reject odd dimensions, and Snapchat has shipped both.
-  const width = Math.floor(track.track_width / 2) * 2;
-  const height = Math.floor(track.track_height / 2) * 2;
+  const even = (n: number) => Math.floor(n / 2) * 2;
+  const width = even(upright ? track.track_height : track.track_width);
+  const height = even(upright ? track.track_width : track.track_height);
   if (!width || !height || video.samples.length > MAX_FRAMES) return null;
 
   // Only claim an audio track when the source actually described one; the
@@ -245,8 +273,24 @@ export async function burnOverlayIntoVideo(
   const decoder = new VideoDecoder({
     output: (frame) => {
       try {
-        ctx.drawImage(frame, 0, 0, width, height);
-        ctx.drawImage(overlay, 0, 0, width, height);
+        // Rotate about the centre so the frame lands upright, then put the
+        // overlay on top in that same orientation.
+        if (rotation) {
+          ctx.save();
+          ctx.translate(width / 2, height / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.drawImage(
+            frame,
+            -track.track_width / 2,
+            -track.track_height / 2,
+            track.track_width,
+            track.track_height,
+          );
+          ctx.restore();
+        } else {
+          ctx.drawImage(frame, 0, 0, width, height);
+        }
+        drawCovering(ctx, overlay, width, height);
         const composited = new VideoFrame(canvas, {
           timestamp: frame.timestamp,
           duration: frame.duration ?? undefined,

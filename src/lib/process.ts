@@ -17,6 +17,7 @@ import {
 } from "./snapchat";
 import { writeExif, isJpeg } from "./exif";
 import { burnOverlayIntoVideo, canRewriteVideo } from "./video";
+import { drawCovering } from "./compose";
 
 export class NotASnapchatExport extends Error {}
 
@@ -137,8 +138,7 @@ async function flatten(
   if (overlayBytes) {
     try {
       const overlay = await decode(overlayBytes, "image/png");
-      // Overlays are authored at the snap's aspect ratio, so cover the frame.
-      ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+      drawCovering(ctx, overlay, canvas.width, canvas.height);
       overlay.close();
     } catch {
       // An unreadable overlay shouldn't cost the user their photo.
