@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe, looksLikeSessionId } from "@/lib/stripe";
 import { findUnlock, getAdminClient, recordUnlock } from "@/lib/unlocks";
+import { PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
 
 /**
  * Decides whether a Stripe Checkout session id represents a real payment.
@@ -53,7 +54,16 @@ export async function POST(request: Request) {
     const paid =
       session.payment_status === "paid" || session.payment_status === "no_payment_required";
 
-    if (!paid || session.status !== "complete") {
+    // Also check what was paid. Stripe only hands back sessions belonging to
+    // this account, but "this account" is a wider set than "this product" the
+    // moment a second price exists — a cheaper session id would otherwise
+    // unlock the same thing.
+    const rightAmount =
+      session.payment_status === "no_payment_required" ||
+      ((session.amount_total ?? 0) >= PRICE_CENTS &&
+        (session.currency ?? PRICE_CURRENCY).toLowerCase() === PRICE_CURRENCY);
+
+    if (!paid || !rightAmount || session.status !== "complete") {
       return NextResponse.json({ unlocked: false });
     }
 

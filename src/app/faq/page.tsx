@@ -59,7 +59,8 @@ export default function FaqPage() {
           <div className="mt-14 max-w-[70ch]">
             <p className="max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-cool">
               Still stuck on something that isn&rsquo;t here? The step-by-step
-              guide covers the Snapchat side in more detail.
+              guide covers the Snapchat side in more detail, and there&rsquo;s a
+              contact form if it doesn&rsquo;t.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/#upload" className="w-full sm:w-auto">
@@ -71,6 +72,13 @@ export default function FaqPage() {
                 className="w-full sm:w-auto"
               >
                 Read how it works
+              </ButtonLink>
+              <ButtonLink
+                href="/contact"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Ask a person
               </ButtonLink>
             </div>
           </div>

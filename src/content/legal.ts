@@ -15,10 +15,7 @@ export type LegalBlock =
   | { kind: "p"; text: string }
   | { kind: "ul"; items: { lead?: string; text: string }[] };
 
-export const LEGAL_UPDATED = "18 August 2026";
-
-/** The address on both legal pages. Change it here and both follow. */
-export const CONTACT = "keepmysnaps@protonmail.com";
+export const LEGAL_UPDATED = "25 August 2026";
 
 export const PRIVACY: LegalBlock[] = [
   {
@@ -34,6 +31,10 @@ export const PRIVACY: LegalBlock[] = [
   {
     kind: "p",
     text: "The finished ZIP is assembled in your browser's memory and saved by your own browser's download. I never have a copy — which also means I can't recover anything for you if something goes wrong.",
+  },
+  {
+    kind: "p",
+    text: "Since August 2026 that isn't only a promise about how the code is written. Every page is served with a content security policy that permits network requests to this site and nowhere else, so the browser itself refuses to send your files anywhere — including to me, and including if one of the open-source libraries doing the unzipping or the video encoding were ever tampered with upstream. Your browser's developer tools will show you the header.",
   },
 
   { kind: "h", text: "What's stored in your browser" },
@@ -109,7 +110,7 @@ export const PRIVACY: LegalBlock[] = [
   { kind: "h", text: "Contact" },
   {
     kind: "p",
-    text: `${CONTACT}. It's one person, so allow a couple of days for a reply.`,
+    text: "There's a form at /contact. It goes to one person, so allow a couple of days for a reply. The form stores nothing — the message is forwarded and not kept.",
   },
   {
     kind: "p",
@@ -182,5 +183,5 @@ export const TERMS: LegalBlock[] = [
   },
 
   { kind: "h", text: "Contact" },
-  { kind: "p", text: `${CONTACT}.` },
+  { kind: "p", text: "Use the form at /contact." },
 ];

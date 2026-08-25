@@ -37,11 +37,12 @@ export const STEPS: Step[] = [
     n: "03",
     title: "Get your memories back, dated",
     short:
-      "Captions flattened onto the photos, real capture dates and GPS written into each file, all of it repacked into one ZIP you can put wherever you like.",
+      "Captions drawn back onto photos and into videos, real capture dates and locations written into each file, all of it repacked into one ZIP you can put wherever you like.",
     long: [
-      "Every photo gets its real capture time written into EXIF — DateTimeOriginal, DateTimeDigitized and DateTime — plus GPS coordinates where Snapchat recorded them. That's the metadata Google Photos, Apple Photos, Immich and everything else read to decide where a picture belongs in your timeline.",
-      "Captions and stickers ship as separate transparent PNGs, which is why exported photos look bare. Each overlay is composited back onto its photo and re-encoded, so what comes out looks like what you posted.",
-      "Videos pass through untouched. MP4 has nowhere to put EXIF, so their dates ride on the filename and the archive's own timestamp, which is what your filesystem picks up when you extract it.",
+      "Every photo gets its real capture time written into EXIF — DateTimeOriginal, DateTimeDigitized and DateTime — which is the metadata Google Photos, Apple Photos, Immich and everything else read to decide where a picture belongs in your timeline. Coordinates go in too, where Snapchat's export makes it possible to tell which memory they belong to; where it doesn't, the field is left empty rather than filled with a guess. There is more on that below.",
+      "Captions, stickers, drawings and location filters all ship as one transparent PNG per memory, which is why exported photos look bare. That layer is composited back on at its own proportions — the overlay is the phone's screen, not the photo, so stretching it to fit would squash the text — and the result re-encoded. What comes out looks like what you posted.",
+      "Videos get the same treatment, the hard way. There is nowhere in an MP4 to put a picture, so the overlay has to become part of the frames: the video is decoded, the caption drawn onto every frame, and the whole thing encoded again — on your machine, with the audio copied across untouched. Dates ride on the filename and the archive's own timestamp instead of EXIF, which is what your filesystem picks up when you extract it.",
+      "If your browser has no video encoder, nothing is thrown away: those captions land in a captions folder named to match their video. The summary at the end says which happened, and how many of each.",
       "Files come out named by capture time — 2019-04-02_09-15-30.jpg — in UTC, because UTC is the only thing Snapchat records. Alongside them you get keepmysnaps-index.csv listing every date and coordinate as plain text, in case you'd rather do something else with it.",
       "The result is one ordinary ZIP. Put it in Drive, Dropbox, your camera roll, or an external drive in a drawer. It is not our business where it goes, which is rather the point.",
     ],
