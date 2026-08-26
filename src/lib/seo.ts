@@ -32,6 +32,7 @@ export const ROUTES = [
   { path: "/", priority: 1 },
   { path: "/how-it-works", priority: 0.9 },
   { path: "/september-2026-deadline", priority: 0.9 },
+  { path: "/waiting-for-your-export", priority: 0.9 },
   { path: "/faq", priority: 0.8 },
   { path: "/contact", priority: 0.5 },
   { path: "/privacy", priority: 0.3 },

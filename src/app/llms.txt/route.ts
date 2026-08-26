@@ -49,6 +49,7 @@ ${[
   ["Home and uploader", "/"],
   ["How it works — requesting the export, step by step", "/how-it-works"],
   ["When Snapchat can start deleting Memories, and what to do", "/september-2026-deadline"],
+  ["How long the export takes, and what arrives broken", "/waiting-for-your-export"],
   ["FAQ", "/faq"],
   ["Contact — a form, not an address", "/contact"],
   ["Privacy", "/privacy"],
