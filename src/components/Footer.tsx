@@ -3,6 +3,7 @@ import Link from "next/link";
 const LINKS = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/september-2026-deadline", label: "The deadline" },
+  { href: "/waiting-for-your-export", label: "While you wait" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
   { href: "/privacy", label: "Privacy" },
@@ -24,7 +25,7 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Seven links no longer fit on one phone-width line, hence the wrap. */}
+        {/* Eight links no longer fit on one phone-width line, hence the wrap. */}
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:justify-end">
           {LINKS.map((link) => (
             <Link
