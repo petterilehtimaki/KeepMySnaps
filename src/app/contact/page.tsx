@@ -5,6 +5,7 @@ import JsonLd from "@/components/JsonLd";
 import ContactForm from "@/components/ContactForm";
 import { breadcrumbs } from "@/lib/jsonld";
 import { Eyebrow, Section } from "@/components/ui";
+import Link from "next/link";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
 const TITLE = "Contact — KeepMySnaps";
@@ -49,9 +50,12 @@ export default function ContactPage() {
           </h1>
           <p className="mt-6 max-w-[58ch] text-[1.0625rem] leading-[1.65] text-muted-cool">
             Refunds, a file the tool choked on, a question the{" "}
-            <a href="/faq" className="font-semibold text-ink underline underline-offset-4">
+            <Link
+              href="/faq"
+              className="font-semibold text-ink underline underline-offset-4"
+            >
               FAQ
-            </a>{" "}
+            </Link>{" "}
             doesn&rsquo;t cover. Snapchat has shipped several shapes of this
             export over the years, so if yours came out wrong, saying what you
             saw is genuinely useful.
