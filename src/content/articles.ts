@@ -416,6 +416,145 @@ export const ARTICLES: Article[] = [
       label: "How long you've got",
     },
   },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapeasy-alternative",
+    crumb: "vs SnapEasy",
+    eyebrow: "Comparison",
+    h1: "A cheaper alternative to SnapEasy",
+    title: "SnapEasy alternative — KeepMySnaps",
+    description:
+      "SnapEasy is $9.99 rising to $19.99, with no free tier and a Mac-only desktop app. This is $5, runs in any browser including a phone, and the first 20 files are free.",
+    lead: "SnapEasy is a real product that does the job, and if you have already paid for it there is no reason to switch. The differences worth knowing: it costs $9.99 at an early-bird price that rises to $19.99, it has no free tier, and its private option is a desktop app that is Mac-only for now. This is $5 once, the first 20 files are free, and it runs in whatever browser you already have — including the one on your phone.",
+    blocks: [
+      {
+        kind: "compare",
+        a: "SnapEasy",
+        b: "KeepMySnaps",
+        rows: [
+          { label: "Price", a: "$9.99 one-off, advertised as an early-bird price rising to $19.99, and stated to increase as September approaches.", b: "$5 one-off. It does not go up." },
+          { label: "Try before paying", a: "No free tier or trial advertised.", b: "First 20 files free, no account." },
+          { label: "Where files are processed", a: "The desktop app runs entirely on your machine. The web version uploads, with uploads stated to be deleted within 48 hours.", b: "In the browser tab. There is no route on the site that accepts a file." },
+          { label: "What you install", a: "Desktop app for the private option — Mac available, Windows listed as coming soon.", b: "Nothing. It's a web page." },
+          { label: "On a phone", a: "Exports from iPhone and Android are supported as input; the local processing option is desktop.", b: "Runs in mobile Safari and Chrome. No computer needed." },
+          { label: "Dates, GPS, captions", a: "All three, including overlays stitched onto the media.", b: "All three, including captions drawn into videos frame by frame." },
+        ],
+      },
+      { kind: "h", text: "Where SnapEasy is genuinely better" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "A native app is faster.", text: "A desktop application can use every core on your machine without a browser between it and the file. On a very large library that is a real difference, and it is the honest reason to prefer one." },
+          { lead: "It has been around longer.", text: "It went viral on TikTok months before this site existed, which means more people have run more unusual exports through it than through this." },
+          { lead: "Unlimited re-runs.", text: "Both are one-off payments with no limit on how often you use them, but SnapEasy says so explicitly and has the track record behind it." },
+        ],
+      },
+      { kind: "h", text: "The difference that isn't about price" },
+      {
+        kind: "p",
+        text: "SnapEasy offers two ways to do this: upload to their servers, or install their desktop app. The app is local and their own description says so. But the web version — the one most people will reach first, because it needs no install — uploads your archive and keeps it for up to 48 hours.",
+      },
+      {
+        kind: "p",
+        text: "This site has one mode. Nothing is uploaded because there is nowhere to upload to, and since August 2026 the browser enforces that rather than us promising it: every page ships a Content-Security-Policy whose connect-src permits this site and nothing else. You can read that header in your own developer tools, and you can run the whole thing with your Wi-Fi switched off.",
+      },
+      {
+        kind: "p",
+        text: "That is the trade in one line: convenience without an upload, versus choosing between convenience and an upload.",
+      },
+      { kind: "h", text: "What neither of us can do" },
+      {
+        kind: "p",
+        text: "My Eyes Only memories are not in the export at all — they have to be taken out of the vault in the app before you request your data, or they simply won't be in the archive for anything to fix. SnapEasy documents this clearly and it applies here identically.",
+      },
+      {
+        kind: "p",
+        text: "Neither can invent a location Snapchat never recorded, and neither can tell which photo a coordinate belongs to when several memories share a day — Snapchat's export contains no field joining the two. This site leaves those blank rather than guessing; check what any tool does with them before you trust a map view.",
+      },
+      { kind: "h", text: "Prices checked" },
+      {
+        kind: "p",
+        text: "Everything above was read off SnapEasy's own site in August 2026. Their pricing page says the price rises as the deadline approaches, so check it yourself rather than taking a competitor's word for what a competitor charges.",
+      },
+    ],
+    closer: {
+      title: "Twenty files, free, right now",
+      text: "You don't have to decide from a comparison table. Drop your export in, get the first 20 memories back with their dates and captions, and see whether the result is what you wanted before anyone asks you for money.",
+      href: "/is-it-safe",
+      label: "Where the files go",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "fixmyexport-alternative",
+    crumb: "vs FixMyExport",
+    eyebrow: "Comparison",
+    h1: "A browser-based alternative to FixMyExport",
+    title: "FixMyExport (ExportSnaps) alternative — KeepMySnaps",
+    description:
+      "FixMyExport is a good desktop app at $14.99 with a generous free tier. This is $5, needs no install, and works on a phone. An honest comparison of both.",
+    lead: "FixMyExport — formerly ExportSnaps — is the closest thing to a direct competitor and it is a good product. It processes everything on your own machine, it is honest about doing so, and its free tier of 200 files is far more generous than the 20 here. The real differences are price and shape: it is a $14.99 desktop app for Mac and Windows, and this is a $5 web page that also runs on a phone.",
+    blocks: [
+      {
+        kind: "compare",
+        a: "FixMyExport",
+        b: "KeepMySnaps",
+        rows: [
+          { label: "Price", a: "$14.99 one-off for unlimited processing, one device.", b: "$5 one-off, no device limit." },
+          { label: "Free tier", a: "Up to 200 files free — genuinely generous.", b: "First 20 files free." },
+          { label: "Where files are processed", a: "Entirely on your device. Nothing uploaded.", b: "Entirely in the browser tab. Nothing uploaded." },
+          { label: "What you install", a: "A desktop app: macOS 12+ or Windows 10 1809+.", b: "Nothing." },
+          { label: "On a phone", a: "Desktop only.", b: "Works in mobile Safari and Chrome." },
+          { label: "Dates, GPS, captions", a: "All three, overlays merged automatically.", b: "All three, including captions drawn into videos." },
+        ],
+      },
+      { kind: "h", text: "When FixMyExport is the better choice" },
+      {
+        kind: "p",
+        text: "Plainly: if your library is under 200 files, use it. It is free at that size and this site is not, and no amount of positioning changes which of those is a better deal for you.",
+      },
+      {
+        kind: "p",
+        text: "If you have a very large library and a computer to run it on, a native app has the edge too. It can use the whole machine, it isn't bound by what a browser tab is allowed to hold in memory, and it won't stop working because you switched apps. On a fifty-gigabyte archive that matters.",
+      },
+      {
+        kind: "p",
+        text: "We also agree on the thing that matters most: neither of us uploads your photos. This is not a privacy comparison, and anyone framing it as one is selling you something.",
+      },
+      { kind: "h", text: "When this one is the better choice" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "You don't have a computer.", text: "This is the big one. FixMyExport is desktop only, and a large share of the people facing this deadline have a phone and nothing else. This runs in mobile Safari." },
+          { lead: "You don't want to install anything.", text: "Some people won't download an executable to handle their entire photo history, and that's a reasonable instinct rather than paranoia." },
+          { lead: "You're over 200 files and counting the cost.", text: "$5 against $14.99 for the same job." },
+          { lead: "You use more than one machine.", text: "Their Pro licence covers one device. A web page has no such concept." },
+        ],
+      },
+      { kind: "h", text: "One thing to check whichever you pick" },
+      {
+        kind: "p",
+        text: "Ask what the tool does with locations when several memories share a day. Snapchat's export has no field joining a photo to its entry in the JSON, so within a single day the files are genuinely indistinguishable. A tool that gives every photo a pin anyway is guessing, and a pin on the wrong photo looks exactly like a pin on the right one — you will never catch it.",
+      },
+      {
+        kind: "p",
+        text: "This site writes the shared centre of a day when the day's memories were in one area, leaves the field empty when they were spread too far for a centre to mean anything, and marks every row exact or approximate in the CSV it hands you. That is not a claim about anyone else's tool; it is a question worth asking of all of them, including this one.",
+      },
+      { kind: "h", text: "Details checked" },
+      {
+        kind: "p",
+        text: "Read off fixmyexport.com in August 2026, after exportsnaps.com began redirecting there. Prices and platform support change — check theirs directly rather than trusting a competitor's summary of it.",
+      },
+    ],
+    closer: {
+      title: "Twenty files, free, right now",
+      text: "If you're under 200 files, use theirs — it's free at that size. If you're over it, or you're doing this on a phone, drop your export here and get the first 20 back before anyone asks you for money.",
+      href: "/on-iphone",
+      label: "Doing it on a phone",
+    },
+  },
 ];
 
 export const ARTICLE_BY_SLUG = new Map(ARTICLES.map((a) => [a.slug, a]));
