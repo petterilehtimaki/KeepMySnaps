@@ -52,25 +52,22 @@ SEED = 20260925
 # The epoch-ish suffix Snapchat puts on the archive name.
 SPLIT_STAMP = "1786724342212"
 
-# Coordinates are city centres, not anybody's home. Roughly: Helsinki, Tampere,
-# Berlin, Lisbon, Reykjavik, Stockholm, Tallinn, Porto.
+# City centres, so nowhere anybody lives.
+#
+# The name and the coordinates travel together deliberately: a geofilter
+# reading LOS ANGELES over a pin dropped in Finland is exactly the sort of
+# detail that gives a demo away the moment someone opens the map view.
 PLACES = [
-    (60.16952, 24.93545),
-    (61.49911, 23.78712),
-    (52.52001, 13.40495),
-    (38.72225, -9.13934),
-    (64.14666, -21.94270),
-    (59.32938, 18.06871),
-    (59.43696, 24.75353),
-    (41.15794, -8.62918),
-]
-
-# Place names for geofilter-style overlays. Snapchat renders these into the
-# same transparent PNG as the text and the stickers, which is why restoring
-# that one layer restores all of it.
-PLACE_NAMES = [
-    "SEINÄJOKI", "HELSINKI", "TAMPERE", "VAASA", "OULU",
-    "TURKU", "JYVÄSKYLÄ", "KUOPIO", "LAPPEENRANTA", "PORI",
+    ("LOS ANGELES", 34.05223, -118.24368),
+    ("SAN FRANCISCO", 37.77493, -122.41942),
+    ("AUSTIN", 30.26715, -97.74306),
+    ("NEW YORK", 40.71278, -74.00594),
+    ("CHICAGO", 41.87811, -87.62980),
+    ("MIAMI", 25.76168, -80.19179),
+    ("SEATTLE", 47.60621, -122.33207),
+    ("DENVER", 39.73924, -104.99025),
+    ("NASHVILLE", 36.16266, -86.78160),
+    ("PORTLAND", 45.51523, -122.67843),
 ]
 
 # Short, ordinary, and about nobody.
@@ -272,12 +269,19 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
             # which is the entire problem this archive is here to demonstrate.
             frame.save(path, "JPEG", quality=88)
 
+        # One place per day, not per memory. People spend a day in a town and
+        # move around inside it; they do not bounce between cities between
+        # snaps. Getting this wrong made the matcher look far worse than it is,
+        # because every day looked like a day spent in two places.
+        place = day_place[day] if rng.random() < 0.85 else None
+
         caption = None
         geofilter = None
         if rng.random() < 0.62:
             caption = CAPTIONS[(index * 7) % len(CAPTIONS)]
-        if rng.random() < 0.3:
-            geofilter = PLACE_NAMES[(index * 3) % len(PLACE_NAMES)]
+        # Name the city the coordinates already put this memory in.
+        if place and rng.random() < 0.34:
+            geofilter = place[0]
         if caption or geofilter:
             (memories_dir / f"{stem}-overlay.png").write_bytes(
                 overlay_png(size, caption or "", geofilter)
@@ -289,11 +293,6 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
                 memories_dir / f"{stem}-thumbnail.jpg", "JPEG", quality=70
             )
 
-        # One place per day, not per memory. People spend a day in a town and
-        # move around inside it; they do not bounce between countries between
-        # snaps. Getting this wrong made the matcher look far worse than it is,
-        # because every day looked like a day spent in two cities.
-        place = day_place[day] if rng.random() < 0.85 else None
         # Field-for-field what a 2026 export writes. No id, no caption: the
         # captions only exist as overlay PNGs, and nothing joins an entry to a
         # file except the date.
@@ -307,8 +306,8 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
         if place:
             # A little jitter so every memory from one city isn't one pin.
             # A few hundred metres of moving about, plus GPS noise.
-            lat = place[0] + rng.uniform(-0.004, 0.004)
-            lon = place[1] + rng.uniform(-0.008, 0.008)
+            lat = place[1] + rng.uniform(-0.004, 0.004)
+            lon = place[2] + rng.uniform(-0.008, 0.008)
             entry["Location"] = f"Latitude, Longitude: {lat:.5f}, {lon:.5f}"
         else:
             # Snapchat writes Null Island when it has nothing. The parser drops it.
