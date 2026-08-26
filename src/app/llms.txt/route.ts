@@ -1,6 +1,7 @@
 import { FAQS } from "@/content/faq";
 import { DEADLINE, FREE_FILE_LIMIT, PRICE_LABEL } from "@/lib/config";
 import { absoluteUrl } from "@/lib/seo";
+import { ARTICLES } from "@/content/articles";
 
 /**
  * llms.txt — a plain-text brief for answer engines.
@@ -54,6 +55,7 @@ ${[
   ["Contact — a form, not an address", "/contact"],
   ["Privacy", "/privacy"],
   ["Terms", "/terms"],
+  ...ARTICLES.map((a) => [a.description, `/${a.slug}`] as const),
 ]
   .map(([label, path]) => `- [${label}](${absoluteUrl(path)})`)
   .join("\n")}
