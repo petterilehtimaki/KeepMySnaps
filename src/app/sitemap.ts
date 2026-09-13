@@ -2,12 +2,17 @@ import type { MetadataRoute } from "next";
 import { ROUTES, absoluteUrl } from "@/lib/seo";
 import { ARTICLES } from "@/content/articles";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+/**
+ * lastmod is the day a page's words last changed, never the build time.
+ * Stamping every URL with the deploy date on every push teaches crawlers the
+ * field is noise, and then they ignore it for the pages that really did change.
+ */
+const day = (isoDay: string) => new Date(`${isoDay}T00:00:00Z`);
 
-  const fixed = ROUTES.map(({ path, priority }) => ({
+export default function sitemap(): MetadataRoute.Sitemap {
+  const fixed = ROUTES.map(({ path, priority, updated }) => ({
     url: absoluteUrl(path),
-    lastModified,
+    lastModified: day(updated),
     changeFrequency: "weekly" as const,
     priority,
   }));
@@ -16,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // sitemap entry and the footer link all follow from that one list.
   const guides = ARTICLES.map((a) => ({
     url: absoluteUrl(`/${a.slug}`),
-    lastModified,
+    lastModified: day(a.updated),
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));

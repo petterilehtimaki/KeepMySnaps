@@ -9,7 +9,7 @@ import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
 const TITLE = "How long does a Snapchat export take? | KeepMySnaps";
 const DESCRIPTION =
-  "Anywhere from a few hours to a couple of days, and longer when a lot of people ask at once. What happens while you wait, when the link expires, and what will be wrong with the archive when it finally lands.";
+  "Often a few hours to a couple of days, and Snapchat says it aims to deliver within 7 days, longer for large downloads. What happens while you wait, when the link expires, and what will be wrong with the archive when it finally lands.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -54,13 +54,13 @@ export default function WaitingPage() {
           {/* Answers the headline on its own, because this is the paragraph
               that gets lifted into a search result or an AI answer. */}
           <p className="mt-6 max-w-[62ch] text-[1.0625rem] leading-[1.65] text-ink">
-            Usually <strong>a few hours to a couple of days</strong>. Small
-            accounts often get the email the same day; a library of several
-            thousand memories takes longer, and everything slows down when a lot
-            of people ask at once. With a September date going round, that is
-            about now.
-            Snapchat publishes no estimate and shows no progress, so there is
-            nothing to refresh. This is the part nobody can hurry, which is the
+            Often <strong>a few hours to a couple of days</strong>, and
+            Snapchat&rsquo;s own help page says it aims to deliver within 7 days,
+            with large downloads taking longer. Small accounts often get the
+            email the same day; a library of several thousand memories takes
+            longer, and everything slows down when a lot of people ask at once.
+            With a September date going round, that is about now. There is no
+            progress bar, so there is nothing to refresh. This is the part nobody can hurry, which is the
             whole argument for requesting it now rather than when you need it.
           </p>
         </Section>

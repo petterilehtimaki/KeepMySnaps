@@ -3,7 +3,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Countdown from "@/components/Countdown";
 import JsonLd from "@/components/JsonLd";
-import { breadcrumbs, deadlineEvent } from "@/lib/jsonld";
+import { breadcrumbs } from "@/lib/jsonld";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { OPTIONS, TIMELINE } from "@/content/deadline";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
@@ -55,7 +55,6 @@ const quote =
 export default function DeadlinePage() {
   return (
     <>
-      <JsonLd data={deadlineEvent()} />
       <JsonLd
         data={breadcrumbs([
           { name: "Home", path: "/" },
@@ -213,8 +212,8 @@ export default function DeadlinePage() {
           <p className={`mt-5 max-w-[62ch] ${body}`}>
             None of this is an emergency, but the export is the slow part.
             Snapchat builds the archive on its own schedule and emails a link
-            when it&rsquo;s done: a few hours to a couple of days for a large
-            library, and longer when a lot of people ask at once. A lot of
+            when it&rsquo;s done. Snapchat aims for within 7 days, and a large
+            library can take longer, especially when a lot of people ask at once. A lot of
             people are about to, because they believe the September date.
           </p>
           <p className={`mt-4 max-w-[62ch] ${body}`}>

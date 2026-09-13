@@ -97,7 +97,7 @@ export const GUIDE: GuideStep[] = [
     n: "7",
     title: "Wait. Usually a day or two",
     body: [
-      "Snapchat builds these at its own pace. There's no queue position and no progress percentage worth watching. A big account with years of memories can take a day or two, sometimes longer. Requesting it again doesn't speed it up; it just gets refused until the first one finishes.",
+      "Snapchat builds these at its own pace. There's no queue position and no progress percentage worth watching. Snapchat says it aims to deliver within 7 days and that large downloads can take longer, though plenty arrive much sooner. Requesting it again doesn't speed it up; it just gets refused until the first one finishes.",
       "Close the app. You'll get an email when it's ready.",
     ],
   },

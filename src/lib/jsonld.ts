@@ -1,4 +1,5 @@
-import { DEADLINE, FREE_FILE_LIMIT, PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
+import { FREE_FILE_LIMIT, PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
+import type { Article } from "@/content/articles";
 import { OG_IMAGE, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 /**
@@ -73,19 +74,30 @@ export function siteGraph() {
   };
 }
 
-/** The deadline the countdown reads from, as a machine-readable event. */
-export function deadlineEvent() {
+/**
+ * One guide as an Article, joined to the site's Organization by `@id`.
+ *
+ * The dates come from the article entry itself rather than the build, so
+ * `dateModified` only moves when the words do. That is the freshness signal
+ * search and answer engines weigh on a topic that keeps changing.
+ */
+export function articleSchema(article: Article) {
+  const url = absoluteUrl(`/${article.slug}`);
   return {
     "@context": "https://schema.org",
-    "@type": "Event",
-    name: "Snapchat can begin archiving Memories over 5GB",
-    description:
-      "Snapchat will archive Memories that are more than a year old and outside a user's oldest 5GB, starting no earlier than January 2027 and with advance notice in the app. Archived Memories are not deleted: they remain on Snapchat as thumbnails that require a paid storage plan to open, edit or share.",
-    startDate: new Date(DEADLINE).toISOString(),
-    eventStatus: "https://schema.org/EventScheduled",
-    eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
-    location: { "@type": "VirtualLocation", url: SITE_URL },
-    organizer: { "@type": "Organization", name: "Snap Inc." },
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: article.h1,
+    description: article.description,
+    url,
+    mainEntityOfPage: url,
+    image: absoluteUrl(OG_IMAGE.url),
+    datePublished: article.published,
+    dateModified: article.updated,
+    inLanguage: "en",
+    author: { "@id": ORG_ID },
+    publisher: { "@id": ORG_ID },
+    isPartOf: { "@id": SITE_ID },
   };
 }
 
