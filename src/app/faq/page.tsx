@@ -7,6 +7,7 @@ import FaqList from "@/components/FaqList";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { FAQS } from "@/content/faq";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+import SaveButton from "@/components/SaveButton";
 
 const TITLE = "FAQ — KeepMySnaps";
 const DESCRIPTION =
@@ -63,9 +64,7 @@ export default function FaqPage() {
               contact form if it doesn&rsquo;t.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/#upload" className="w-full sm:w-auto">
-                Save my memories
-              </ButtonLink>
+              <SaveButton className="w-full sm:w-auto" />
               <ButtonLink
                 href="/how-it-works"
                 variant="outline"

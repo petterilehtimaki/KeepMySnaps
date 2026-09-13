@@ -55,6 +55,18 @@ export default function Uploader() {
     [],
   );
 
+  // Arriving at /#upload from another page — "Test first" in the save prompt,
+  // or coming back from Stripe — lands at the top: a client-side navigation
+  // resets scroll before this section exists to be scrolled to. So once it
+  // does exist, go to it.
+  useEffect(() => {
+    if (window.location.hash !== "#upload") return;
+    const id = window.setTimeout(() => {
+      document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, []);
+
   const run = useCallback(
     async (files: File[]) => {
       const zips = files.filter(looksLikeZip);

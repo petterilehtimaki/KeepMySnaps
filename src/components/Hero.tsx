@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import Countdown from "./Countdown";
 import HeroThumbnails from "./HeroThumbnails";
-import { ButtonLink, Section } from "./ui";
+import {Section} from "./ui";
+import SaveButton from "@/components/SaveButton";
 
 /** Line-only icons — no fills, no colour, no rounded tiles. */
 const icon = {
@@ -108,9 +109,7 @@ export default function Hero() {
           </p>
 
           <div className="mt-10 flex justify-center">
-            <ButtonLink href="#upload" className="w-full sm:w-auto">
-              Save my memories
-            </ButtonLink>
+            <SaveButton className="w-full sm:w-auto" />
           </div>
 
           <div className="pointer-events-none mt-14 flex select-none justify-center xl:hidden">
