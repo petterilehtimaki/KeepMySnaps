@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
   if (!EMAIL.test(email)) {
     return NextResponse.json(
-      { error: "That email address doesn't look right — we'd have nowhere to reply." },
+      { error: "That email address doesn't look right, so there'd be nowhere to reply." },
       { status: 400 },
     );
   }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "The message didn't go through. Nothing was saved, so nothing was lost — please try again shortly.",
+          "The message didn't go through. Nothing was saved, so nothing was lost. Please try again shortly.",
       },
       { status: 502 },
     );

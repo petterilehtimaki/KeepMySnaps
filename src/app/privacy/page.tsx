@@ -8,7 +8,7 @@ import { Eyebrow, Section } from "@/components/ui";
 import { LEGAL_UPDATED, PRIVACY } from "@/content/legal";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
-const TITLE = "Privacy — KeepMySnaps";
+const TITLE = "Privacy | KeepMySnaps";
 const DESCRIPTION =
   "What happens to data on KeepMySnaps: nothing is uploaded, everything runs in your browser, there is no analytics and no tracking, and the only record kept is a Stripe payment id.";
 

@@ -9,7 +9,7 @@ import { STEPS } from "@/content/steps";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 import SaveButton from "@/components/SaveButton";
 
-const TITLE = "How it works — KeepMySnaps";
+const TITLE = "How it works | KeepMySnaps";
 const DESCRIPTION =
   "The long version: how to request your Snapchat export, what to drop in, and exactly which metadata gets written back into your photos. Three steps, one of which is just waiting for Snapchat.";
 
@@ -54,7 +54,7 @@ export default function HowItWorksPage() {
           </h1>
           <p className="mt-6 max-w-[54ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
             Getting the export out of Snapchat is the fiddly part, so that step
-            is here tap by tap — including the two switches that decide whether
+            is here tap by tap, including the two switches that decide whether
             your archive contains any photos at all.
           </p>
         </Section>

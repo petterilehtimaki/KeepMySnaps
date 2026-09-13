@@ -27,13 +27,13 @@ export const TIMELINE: TimelineEntry[] = [
     when: "The 12 months after",
     what: "Temporary storage",
     detail:
-      "Everything over 5GB stays exactly where it is and fully usable. The end of this window, in late September 2026, is the date most countdowns point at — but it's when the grace period runs out, not when anything happens to your Memories.",
+      "Everything over 5GB stays exactly where it is and fully usable. The end of this window, in late September 2026, is the date most countdowns point at, but it's when the grace period runs out, not when anything happens to your Memories.",
   },
   {
     when: "January 2027, at the earliest",
     what: "Archiving can begin",
     detail:
-      "Memories that are more than a year old and aren't part of your oldest 5GB get archived. Snapchat says nothing is archived before January 2027, and that it will warn you in the app before anything changes on your account — so there is no single day everyone's library flips.",
+      "Memories that are more than a year old and aren't part of your oldest 5GB get archived. Snapchat says nothing is archived before January 2027, and that it will warn you in the app before anything changes on your account. So there is no single day everyone's library flips.",
   },
   {
     when: "Once archived",
@@ -56,14 +56,14 @@ export const OPTIONS: Option[] = [
     cost: "$1.99/month or $20/year for 100GB",
     gets: "Everything stays openable exactly where it is, in the app, resurfacing the way it always has. No files to move, no export to wait for.",
     catch:
-      "It is rent, not ownership — for as long as you want to see them, and the terms are Snapchat's to change. Snapchat+ includes 250GB and Platinum includes 5TB, so check what you're already paying for before adding a plan.",
+      "It is rent, not ownership: you pay for as long as you want to see them, and the terms are Snapchat's to change. Snapchat+ includes 250GB and Platinum includes 5TB, so check what you're already paying for before adding a plan.",
   },
   {
     name: "Do nothing",
     cost: "Free",
     gets: "Nothing is deleted. Everything from the last year, and your oldest 5GB, stays fully usable.",
     catch:
-      "Everything in between becomes a thumbnail from January 2027 — still there, but locked until you pay. For most long-time users, the in-between is most of the library.",
+      "Everything in between becomes a thumbnail from January 2027: still there, but locked until you pay. For most long-time users, the in-between is most of the library.",
   },
   {
     name: "Export and keep them",

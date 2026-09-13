@@ -173,8 +173,8 @@ export default function SaveButton({ size = "md", className = "" }: Props) {
             </p>
           ) : (
             <p className="mt-5 text-[0.8125rem] leading-[1.6] text-muted-cool">
-              Doesn&rsquo;t work on your export? Ask for a refund. Chasing five
-              dollars is not a business model.
+              If it can&rsquo;t handle your export and we can&rsquo;t fix it,
+              you get the $5 back.
             </p>
           )}
         </div>

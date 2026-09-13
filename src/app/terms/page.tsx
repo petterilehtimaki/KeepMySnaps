@@ -8,9 +8,9 @@ import { Eyebrow, Section } from "@/components/ui";
 import { LEGAL_UPDATED, TERMS } from "@/content/legal";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
-const TITLE = "Terms — KeepMySnaps";
+const TITLE = "Terms | KeepMySnaps";
 const DESCRIPTION =
-  "The terms for KeepMySnaps: $5 once, the first 20 files free, refunds on request, run by an individual, and not affiliated with Snap Inc.";
+  "The terms for KeepMySnaps: $5 once, the first 20 files free, a refund if it can't handle your export, run by an individual, and not affiliated with Snap Inc.";
 
 export const metadata: Metadata = {
   title: TITLE,

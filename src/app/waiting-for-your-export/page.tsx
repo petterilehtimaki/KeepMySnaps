@@ -7,7 +7,7 @@ import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { SNAGS, STAGES } from "@/content/waiting";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
-const TITLE = "How long does a Snapchat export take? — KeepMySnaps";
+const TITLE = "How long does a Snapchat export take? | KeepMySnaps";
 const DESCRIPTION =
   "Anywhere from a few hours to a couple of days, and longer when a lot of people ask at once. What happens while you wait, when the link expires, and what will be wrong with the archive when it finally lands.";
 
@@ -57,7 +57,7 @@ export default function WaitingPage() {
             Usually <strong>a few hours to a couple of days</strong>. Small
             accounts often get the email the same day; a library of several
             thousand memories takes longer, and everything slows down when a lot
-            of people ask at once — which, with a September date going round, is
+            of people ask at once. With a September date going round, that is
             about now.
             Snapchat publishes no estimate and shows no progress, so there is
             nothing to refresh. This is the part nobody can hurry, which is the
@@ -108,7 +108,7 @@ export default function WaitingPage() {
               eight years of memories land in your library on a single date, out
               of order, with the text and stickers sitting in separate files
               beside them. The real dates and coordinates are in a JSON file
-              right there in the ZIP — Snapchat just doesn&rsquo;t put them back
+              right there in the ZIP. Snapchat just doesn&rsquo;t put them back
               into the media.
             </p>
             <p className={`mt-4 max-w-[62ch] ${body}`}>

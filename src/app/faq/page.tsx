@@ -9,7 +9,7 @@ import { FAQS } from "@/content/faq";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 import SaveButton from "@/components/SaveButton";
 
-const TITLE = "FAQ — KeepMySnaps";
+const TITLE = "FAQ | KeepMySnaps";
 const DESCRIPTION =
   "Whether we can see your photos (no), how to get your export out of Snapchat, why it costs $5 once, and what happens to videos.";
 

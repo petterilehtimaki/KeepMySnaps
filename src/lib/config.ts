@@ -25,7 +25,7 @@ export const PRICE_CENTS = 500;
 export const PRICE_CURRENCY = "usd";
 export const PRICE_LABEL = "$5";
 
-export const PRODUCT_NAME = "KeepMySnaps — unlock every file";
+export const PRODUCT_NAME = "KeepMySnaps: unlock every file";
 
 /**
  * Where the verified Stripe Checkout session id is kept between visits. The

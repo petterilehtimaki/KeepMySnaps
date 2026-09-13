@@ -50,7 +50,7 @@ export async function sendContactMessage(msg: Message): Promise<SendResult> {
     from,
     to: [CONTACT],
     reply_to: msg.email,
-    subject: `KeepMySnaps — ${msg.name || msg.email}`,
+    subject: `KeepMySnaps: ${msg.name || msg.email}`,
     text: [
       `From: ${msg.name || "(no name)"} <${msg.email}>`,
       "",
