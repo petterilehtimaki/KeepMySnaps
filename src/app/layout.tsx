@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { OG_IMAGE, SITE_URL, TWITTER_CARD } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
+import ContactLauncher from "@/components/ContactLauncher";
 import { siteGraph } from "@/lib/jsonld";
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body>
         <JsonLd data={siteGraph()} />
         {children}
+        <ContactLauncher />
       </body>
     </html>
   );

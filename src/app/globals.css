@@ -73,3 +73,25 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
+
+/* The corner contact panel rises into place rather than blinking in. */
+.contact-panel[open] {
+  animation: contact-rise 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.contact-panel[open]::backdrop {
+  animation: contact-fade 220ms ease-out;
+}
+
+@keyframes contact-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes contact-fade {
+  from {
+    opacity: 0;
+  }
+}

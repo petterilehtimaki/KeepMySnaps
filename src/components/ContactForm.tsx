@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "./ui";
 
 type State = "idle" | "sending" | "sent";
@@ -14,9 +14,15 @@ const field =
 const label =
   "text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-muted";
 
-export default function ContactForm() {
+/**
+ * `compact` is the corner panel's version: full width, a shorter message box
+ * and a full-width button. Field ids come from useId so the form can appear
+ * more than once without two inputs sharing an id.
+ */
+export default function ContactForm({ compact = false }: { compact?: boolean }) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
+  const id = useId();
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +62,7 @@ export default function ContactForm() {
     return (
       <div
         role="status"
-        className="rounded-[10px] border border-hair bg-faint px-6 py-10 text-center"
+        className={`rounded-[10px] border border-hair bg-faint text-center ${compact ? "px-5 py-8" : "px-6 py-10"}`}
       >
         <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
           Sent. Thanks.
@@ -77,13 +83,16 @@ export default function ContactForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex max-w-[46ch] flex-col gap-5">
+    <form
+      onSubmit={submit}
+      className={compact ? "flex w-full flex-col gap-4" : "flex max-w-[46ch] flex-col gap-5"}
+    >
       <div className="flex flex-col gap-2">
-        <label className={label} htmlFor="contact-name">
+        <label className={label} htmlFor={`${id}-name`}>
           Name <span className="normal-case tracking-normal">(optional)</span>
         </label>
         <input
-          id="contact-name"
+          id={`${id}-name`}
           name="name"
           type="text"
           maxLength={80}
@@ -93,11 +102,11 @@ export default function ContactForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className={label} htmlFor="contact-email">
+        <label className={label} htmlFor={`${id}-email`}>
           Your email
         </label>
         <input
-          id="contact-email"
+          id={`${id}-email`}
           name="email"
           type="email"
           required
@@ -109,14 +118,14 @@ export default function ContactForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className={label} htmlFor="contact-message">
+        <label className={label} htmlFor={`${id}-message`}>
           Message
         </label>
         <textarea
-          id="contact-message"
+          id={`${id}-message`}
           name="message"
           required
-          rows={7}
+          rows={compact ? 4 : 7}
           minLength={10}
           maxLength={5000}
           className={`${field} resize-y`}
@@ -125,8 +134,8 @@ export default function ContactForm() {
 
       {/* Hidden from people, irresistible to bots. */}
       <div className="absolute left-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
-        <label htmlFor="contact-website">Leave this empty</label>
-        <input id="contact-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+        <label htmlFor={`${id}-website`}>Leave this empty</label>
+        <input id={`${id}-website`} name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
       {error && (
@@ -136,7 +145,11 @@ export default function ContactForm() {
       )}
 
       <div>
-        <Button type="submit" disabled={state === "sending"}>
+        <Button
+          type="submit"
+          disabled={state === "sending"}
+          className={compact ? "w-full" : ""}
+        >
           {state === "sending" ? "Sending…" : "Send message"}
         </Button>
       </div>
