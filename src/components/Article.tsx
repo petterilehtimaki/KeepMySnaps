@@ -4,6 +4,7 @@ import Footer from "./Footer";
 import JsonLd from "./JsonLd";
 import { breadcrumbs } from "@/lib/jsonld";
 import type { Article as ArticleContent } from "@/content/articles";
+import SaveButton from "@/components/SaveButton";
 
 /**
  * One shape for every explanatory page on the site.
@@ -134,9 +135,7 @@ export default function Article({ article }: { article: ArticleContent }) {
             <h2 className={h2}>{article.closer.title}</h2>
             <p className={`mt-5 max-w-[62ch] ${body}`}>{article.closer.text}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/#upload" className="w-full sm:w-auto">
-                Save my memories
-              </ButtonLink>
+              <SaveButton className="w-full sm:w-auto" />
               <ButtonLink
                 href={article.closer.href}
                 variant="outline"

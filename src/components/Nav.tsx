@@ -1,6 +1,7 @@
 import Link from "next/link";
 import MobileMenu from "./MobileMenu";
-import { ButtonLink } from "./ui";
+
+import SaveButton from "@/components/SaveButton";
 
 export default function Nav() {
   return (
@@ -29,9 +30,7 @@ export default function Nav() {
           >
             FAQ
           </Link>
-          <ButtonLink href="/#upload" size="sm">
-            Save my memories
-          </ButtonLink>
+          <SaveButton size="sm" />
         </div>
       </nav>
     </header>

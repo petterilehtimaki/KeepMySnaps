@@ -7,6 +7,7 @@ import ExportWalkthrough from "@/components/ExportWalkthrough";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { STEPS } from "@/content/steps";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+import SaveButton from "@/components/SaveButton";
 
 const TITLE = "How it works — KeepMySnaps";
 const DESCRIPTION =
@@ -97,9 +98,7 @@ export default function HowItWorksPage() {
               the homepage.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/#upload" className="w-full sm:w-auto">
-                Save my memories
-              </ButtonLink>
+              <SaveButton className="w-full sm:w-auto" />
               <ButtonLink href="/faq" variant="outline" className="w-full sm:w-auto">
                 Read the FAQ
               </ButtonLink>

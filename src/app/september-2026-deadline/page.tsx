@@ -7,6 +7,7 @@ import { breadcrumbs, deadlineEvent } from "@/lib/jsonld";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { OPTIONS, TIMELINE } from "@/content/deadline";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
+import SaveButton from "@/components/SaveButton";
 
 /**
  * The URL keeps "september-2026-deadline" on purpose.
@@ -246,9 +247,7 @@ export default function DeadlinePage() {
               landed before deciding whether it was worth $5.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/#upload" className="w-full sm:w-auto">
-                Save my memories
-              </ButtonLink>
+              <SaveButton className="w-full sm:w-auto" />
               <ButtonLink
                 href="/how-it-works"
                 variant="outline"
