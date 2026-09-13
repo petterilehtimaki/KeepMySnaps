@@ -75,9 +75,9 @@ export default function ContactLauncher() {
           </div>
 
           <p className="mt-3 text-[0.875rem] leading-[1.6] text-muted-cool">
-            Refunds, a file the tool choked on, anything the FAQ doesn&rsquo;t
-            cover. It reaches one person and nothing is stored. Don&rsquo;t send
-            photos — there&rsquo;s nowhere to put them.
+            A file the tool choked on, a payment problem, anything the FAQ
+            doesn&rsquo;t cover. It reaches one person and nothing is stored.
+            Please don&rsquo;t send photos: there&rsquo;s nowhere to put them.
           </p>
 
           <div className="mt-5">

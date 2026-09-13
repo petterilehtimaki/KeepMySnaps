@@ -575,7 +575,7 @@ export default function ExportWalkthrough() {
       </ol>
 
       <p className="mt-14 max-w-[52ch] text-[0.8125rem] leading-[1.6] text-muted">
-        Those are drawings, not screenshots — no real account appears in any of
+        Those are drawings, not screenshots. No real account appears in any of
         them. Snapchat moves this flow around every so often, so match the
         wording rather than the exact position on your screen.
       </p>

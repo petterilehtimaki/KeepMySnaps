@@ -68,7 +68,7 @@ export default function ContactForm({ compact = false }: { compact?: boolean }) 
           Sent. Thanks.
         </p>
         <p className="mx-auto mt-2 max-w-[44ch] text-[0.9375rem] leading-[1.65] text-muted-cool">
-          It goes to one person, so the reply won&rsquo;t be instant — but it
+          It goes to one person, so the reply won&rsquo;t be instant, but it
           will be a person. Nothing about the message was stored anywhere.
         </p>
         <button

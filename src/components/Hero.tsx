@@ -104,8 +104,8 @@ export default function Hero() {
 
           <p className="mx-auto mt-6 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">
             Snapchat&rsquo;s export hands you a folder of undated files with the
-            captions torn off. This puts the dates, locations and captions back
-            — without uploading anything.
+            captions torn off. This puts the dates, locations and captions back,
+            without uploading anything.
           </p>
 
           <div className="mt-10 flex justify-center">

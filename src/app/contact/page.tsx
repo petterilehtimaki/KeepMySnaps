@@ -8,9 +8,9 @@ import { Eyebrow, Section } from "@/components/ui";
 import Link from "next/link";
 import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
-const TITLE = "Contact — KeepMySnaps";
+const TITLE = "Contact | KeepMySnaps";
 const DESCRIPTION =
-  "Something not working, a refund, a question the FAQ doesn't answer, or a Snapchat export shaped in a way the tool didn't expect. It goes to one person.";
+  "Something not working, a payment problem, a question the FAQ doesn't answer, or a Snapchat export shaped in a way the tool didn't expect. It goes to one person.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -49,7 +49,7 @@ export default function ContactPage() {
             Ask a person
           </h1>
           <p className="mt-6 max-w-[58ch] text-[1.0625rem] leading-[1.65] text-muted-cool">
-            Refunds, a file the tool choked on, a question the{" "}
+            A file the tool choked on, a payment problem, a question the{" "}
             <Link
               href="/faq"
               className="font-semibold text-ink underline underline-offset-4"

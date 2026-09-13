@@ -145,7 +145,7 @@ export default function Uploader() {
           message:
             err instanceof NotASnapchatExport
               ? err.message
-              : "Something fell over partway through. That one's on us — try again, and if it keeps happening the export is probably shaped in a way we haven't seen yet.",
+              : "Something fell over partway through. That one's on us. Try again, and if it keeps happening the export is probably shaped in a way we haven't seen yet.",
         });
       } finally {
         abortRef.current = null;
@@ -180,7 +180,7 @@ export default function Uploader() {
       </h2>
       <p className="mt-4 max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-cool">
         It stays on this device. There is no upload step, no account, and no
-        server holding your photos — the work happens in this tab.
+        server holding your photos. The work happens in this tab.
       </p>
 
       <div className="mt-10">
@@ -202,7 +202,7 @@ export default function Uploader() {
               Drag your export ZIP here
             </p>
             <p className="mx-auto mt-2 max-w-[40ch] text-[0.875rem] leading-[1.6] text-muted-cool">
-              Several ZIPs is fine too — Snapchat splits big exports.
+              Several ZIPs is fine too. Snapchat splits big exports.
               Don&rsquo;t unzip them first.
             </p>
 
@@ -235,7 +235,7 @@ export default function Uploader() {
 
             {unlockStatus === "unlocked" && state.kind !== "error" && (
               <p className="mx-auto mt-7 max-w-[44ch] text-[0.8125rem] leading-[1.6] text-muted">
-                Payment found — no file limit on this browser, and you can drop
+                Payment found. No file limit on this browser, and you can drop
                 every ZIP in together. We kept the receipt, not the photos.
               </p>
             )}
@@ -416,7 +416,7 @@ function UnlockButton() {
   return (
     <>
       <Button className="mt-7" onClick={onBuy} disabled={busy} type="button">
-        {busy ? "Opening checkout…" : `Unlock everything — ${PRICE_LABEL}`}
+        {busy ? "Opening checkout…" : `Unlock everything for ${PRICE_LABEL}`}
       </Button>
 
       {error && (
@@ -470,8 +470,8 @@ function LockedPanel({
 
       <p className="mx-auto mt-7 max-w-[44ch] text-[0.75rem] leading-[1.6] text-muted-cool">
         {multi
-          ? "Nothing was opened — those files haven't been read."
-          : "Nothing was opened — that file hasn't been read."}
+          ? "Nothing was opened. Those files haven't been read."
+          : "Nothing was opened. That file hasn't been read."}
       </p>
     </div>
   );
@@ -489,14 +489,14 @@ function Paywall({ withheld }: { withheld: number }) {
       </p>
       <p className="mx-auto mt-2 max-w-[48ch] text-[0.875rem] leading-[1.65] text-muted-cool">
         {remainder
-          ? `That's what's left in this one. ${PRICE_LABEL} unlocks the rest, and any other ZIPs Snapchat split your export into. Once, not monthly — we are not Snapchat.`
-          : `Large exports arrive in several. ${PRICE_LABEL} runs all of them at once with no file limit. Once, not monthly — we are not Snapchat.`}
+          ? `That's what's left in this one. ${PRICE_LABEL} unlocks the rest, and any other ZIPs Snapchat split your export into. Once, not monthly. We are not Snapchat.`
+          : `Large exports arrive in several. ${PRICE_LABEL} runs all of them at once with no file limit. Once, not monthly. We are not Snapchat.`}
       </p>
 
       <UnlockButton />
 
       <p className="mx-auto mt-5 max-w-[40ch] text-[0.75rem] leading-[1.6] text-muted-cool">
-        You&rsquo;ll come back here afterwards and drop your ZIPs in again — all
+        You&rsquo;ll come back here afterwards and drop your ZIPs in again, all
         of them this time. Nothing was kept while you were gone.
       </p>
     </div>

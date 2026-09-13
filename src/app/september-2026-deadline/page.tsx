@@ -22,9 +22,9 @@ import SaveButton from "@/components/SaveButton";
 const SOURCE =
   "https://help.snapchat.com/hc/en-us/articles/41291271694228-How-do-I-manage-my-Memories-storage";
 
-const TITLE = "Is Snapchat deleting memories in September 2026? No. — KeepMySnaps";
+const TITLE = "Is Snapchat deleting memories in September 2026? No. | KeepMySnaps";
 const DESCRIPTION =
-  "There's no September 2026 deletion. Snapchat says it won't delete Memories over 5GB — from January 2027 it archives them as thumbnails you pay to open. What's actually changing, and what to do about it.";
+  "There's no September 2026 deletion. Snapchat says it won't delete Memories over 5GB. From January 2027 it archives them as thumbnails you pay to open. What's actually changing, and what to do about it.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -70,11 +70,11 @@ export default function DeadlinePage() {
             Is Snapchat deleting your memories in September 2026?
           </h1>
           {/* Answers the headline on its own, because this is the paragraph
-              that gets quoted — and the answer most people expect is wrong. */}
+              that gets quoted, and the answer most people expect is wrong. */}
           <p className="mt-6 max-w-[62ch] text-[1.0625rem] leading-[1.65] text-ink">
             <strong>No.</strong> Snapchat&rsquo;s own support page answers it
             directly: nothing over the 5GB limit is deleted. What happens
-            instead starts in <strong>January 2027</strong> at the earliest —
+            instead starts in <strong>January 2027</strong> at the earliest:
             Memories more than a year old that aren&rsquo;t part of your oldest
             5GB get archived, which means they stay in the app as thumbnails
             you have to pay to open, edit or share. The 26 September 2026 date
@@ -141,15 +141,15 @@ export default function DeadlinePage() {
           <h2 className={h2}>What &ldquo;archived&rdquo; means for you</h2>
           <p className={`mt-5 max-w-[62ch] ${body}`}>
             It&rsquo;s more specific than it sounds. An archived memory isn&rsquo;t
-            gone and isn&rsquo;t hidden — you&rsquo;ll still see it in the app —
+            gone and isn&rsquo;t hidden (you&rsquo;ll still see it in the app),
             but only as a thumbnail. The full photo or video is behind a storage
             plan for as long as you want to look at it.
           </p>
           <p className={`mt-4 max-w-[62ch] ${body}`}>
             Two parts of your library stay fully usable for free: everything
             saved in the last year, and your oldest 5GB. What gets archived is
-            everything in between — which, for anyone who has used Snapchat for
-            a few years, is usually most of it.
+            everything in between. For anyone who has used Snapchat for a few
+            years, that is usually most of it.
           </p>
           <p className={`mt-4 max-w-[62ch] ${body}`}>
             You can check where you stand in the app under Settings &rarr;
@@ -164,8 +164,8 @@ export default function DeadlinePage() {
             When Snapchat announced storage plans on 26 September 2025, it
             promised affected accounts 12 months of temporary storage. Twelve
             months from then is 26 September 2026, and a great deal of coverage
-            — and most of the tools selling a fix, including an earlier version
-            of this page — read the end of that window as the start of
+            (and most of the tools selling a fix, including an earlier version
+            of this page) read the end of that window as the start of
             deletion. Snapchat&rsquo;s announcement never said that.
           </p>
           <p className={`mt-4 max-w-[62ch] ${body}`}>
@@ -203,7 +203,7 @@ export default function DeadlinePage() {
             saying so plainly: if what you want is your Memories inside
             Snapchat, where the app shows them back to you, a storage plan buys
             exactly that and no export replaces it. Exporting is the right
-            answer if you want the files to be yours — or if you&rsquo;re
+            answer if you want the files to be yours, or if you&rsquo;re
             paying now and suspect you won&rsquo;t want to forever.
           </p>
         </Section>
@@ -213,7 +213,7 @@ export default function DeadlinePage() {
           <p className={`mt-5 max-w-[62ch] ${body}`}>
             None of this is an emergency, but the export is the slow part.
             Snapchat builds the archive on its own schedule and emails a link
-            when it&rsquo;s done — a few hours to a couple of days for a large
+            when it&rsquo;s done: a few hours to a couple of days for a large
             library, and longer when a lot of people ask at once. A lot of
             people are about to, because they believe the September date.
           </p>
@@ -238,7 +238,7 @@ export default function DeadlinePage() {
               export was built, so years of Memories land in your photo library
               on a single date, in no order, with the text, stickers and
               location filters sitting in separate files. The real dates and
-              coordinates are in a JSON file right next to the media — Snapchat
+              coordinates are in a JSON file right next to the media. Snapchat
               just doesn&rsquo;t put them back into the photos.
             </p>
             <p className={`mt-4 max-w-[62ch] ${body}`}>

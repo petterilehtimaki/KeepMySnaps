@@ -231,7 +231,7 @@ export async function processExport(
   }
   if (!mediaFiles.length) {
     throw new NotASnapchatExport(
-      "That export has the list of your memories but none of the actual files. Snapchat sometimes emails the JSON first and the media later — check for a second download link.",
+      "That export has the list of your memories but none of the actual files. Snapchat sometimes emails the JSON first and the media later, so check for a second download link.",
     );
   }
 
@@ -440,7 +440,7 @@ export async function processExport(
       "list, so when several memories share a day we can't always tell them",
       "apart. Those get the centre of where that day's memories were, marked",
       "\"approximate\" in the CSV. Where the day was spread too far for a centre",
-      "to mean anything, the location is left out rather than guessed at — a",
+      "to mean anything, the location is left out rather than guessed at: a",
       "pin in the wrong place looks exactly like a pin in the right one.",
       "",
       ...(summary.videoCaptionsKept
@@ -449,8 +449,8 @@ export async function processExport(
             "",
             "Snapchat ships a video's caption as a separate transparent PNG.",
             "Most are drawn back into the video itself. These ones couldn't be",
-            "— either this browser has no video encoder, or the file wasn't one",
-            "it would take — so they're in the captions/ folder, named to match",
+            "(either this browser has no video encoder, or the file wasn't one",
+            "it would take), so they're in the captions/ folder, named to match",
             "their video, rather than lost.",
             "",
           ]

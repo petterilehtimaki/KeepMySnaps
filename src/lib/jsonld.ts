@@ -18,7 +18,7 @@ const SITE_ID = `${SITE_URL}/#website`;
 const APP_ID = `${SITE_URL}/#software`;
 
 const DESCRIPTION =
-  "Takes the export ZIP Snapchat emails you and writes the real capture dates, GPS coordinates and captions back into your photos. Runs entirely in the browser — nothing is uploaded.";
+  "Takes the export ZIP Snapchat emails you and writes the real capture dates, GPS coordinates and captions back into your photos. Runs entirely in the browser. Nothing is uploaded.";
 
 export function siteGraph() {
   return {

@@ -32,7 +32,7 @@ export const STAGES: Stage[] = [
     when: "The email",
     what: "A download link arrives",
     detail:
-      "It comes from Snapchat to the address on your account. Check spam — it is a bulk send with a link in it, which is exactly what spam filters are built to catch.",
+      "It comes from Snapchat to the address on your account. Check spam: it is a bulk send with a link in it, which is exactly what spam filters are built to catch.",
   },
   {
     when: "Within a few days of that",
@@ -50,7 +50,7 @@ export type Snag = {
 export const SNAGS: Snag[] = [
   {
     q: "It's been three days and nothing has arrived",
-    a: "Check spam first, then check the email address on your Snapchat account is one you still read. If both are fine, request it again — a second request doesn't cancel the first, and whichever arrives first is the one you use.",
+    a: "Check spam first, then check the email address on your Snapchat account is one you still read. If both are fine, request it again. A second request doesn't cancel the first, and whichever arrives first is the one you use.",
   },
   {
     q: "The archive came but there are no photos in it",
@@ -58,7 +58,7 @@ export const SNAGS: Snag[] = [
   },
   {
     q: "There are photos but no JSON folder",
-    a: "“Export JSON Files” wasn't ticked. That file is where the real dates and locations live — without it, nothing can put them back, including this site. Worth requesting again for.",
+    a: "“Export JSON Files” wasn't ticked. That file is where the real dates and locations live. Without it, nothing can put them back, including this site. Worth requesting again for.",
   },
   {
     q: "I got seven ZIP files",

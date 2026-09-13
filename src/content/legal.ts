@@ -30,11 +30,11 @@ export const PRIVACY: LegalBlock[] = [
   },
   {
     kind: "p",
-    text: "The finished ZIP is assembled in your browser's memory and saved by your own browser's download. I never have a copy — which also means I can't recover anything for you if something goes wrong.",
+    text: "The finished ZIP is assembled in your browser's memory and saved by your own browser's download. I never have a copy, which also means I can't recover anything for you if something goes wrong.",
   },
   {
     kind: "p",
-    text: "Since August 2026 that isn't only a promise about how the code is written. Every page is served with a content security policy that permits network requests to this site and nowhere else, so the browser itself refuses to send your files anywhere — including to me, and including if one of the open-source libraries doing the unzipping or the video encoding were ever tampered with upstream. Your browser's developer tools will show you the header.",
+    text: "Since August 2026 that isn't only a promise about how the code is written. Every page is served with a content security policy that permits network requests to this site and nowhere else, so the browser itself refuses to send your files anywhere, including to me, and including if one of the open-source libraries doing the unzipping or the video encoding were ever tampered with upstream. Your browser's developer tools will show you the header.",
   },
 
   { kind: "h", text: "What's stored in your browser" },
@@ -54,7 +54,7 @@ export const PRIVACY: LegalBlock[] = [
     items: [
       {
         lead: "Loading the page.",
-        text: "The site is hosted on Vercel, which — like every web host — records standard request information in its server logs: IP address, browser user agent, which page was requested, and when. I don't use those logs to build a picture of anyone, and there is nothing in them connecting a request to an export.",
+        text: "The site is hosted on Vercel, which, like every web host, records standard request information in its server logs: IP address, browser user agent, which page was requested, and when. I don't use those logs to build a picture of anyone, and there is nothing in them connecting a request to an export.",
       },
       {
         lead: "Starting a payment.",
@@ -70,7 +70,7 @@ export const PRIVACY: LegalBlock[] = [
   { kind: "h", text: "Payment" },
   {
     kind: "p",
-    text: "Payments are handled by Stripe. Card details are entered on Stripe's own page and never touch this site. Stripe processes that payment as its own data controller under its privacy policy, and will hold whatever you gave it — typically an email address for the receipt.",
+    text: "Payments are handled by Stripe. Card details are entered on Stripe's own page and never touch this site. Stripe processes that payment as its own data controller under its privacy policy, and will hold whatever you gave it, typically an email address for the receipt.",
   },
   {
     kind: "p",
@@ -80,7 +80,7 @@ export const PRIVACY: LegalBlock[] = [
   { kind: "h", text: "What doesn't exist" },
   {
     kind: "p",
-    text: "There are no accounts and no sign-in. There is no mailing list. Nothing is sold, shared, rented or handed to advertisers — there is nothing here to sell. No profiling and no automated decision-making happens about you.",
+    text: "There are no accounts and no sign-in. There is no mailing list. Nothing is sold, shared, rented or handed to advertisers. There is nothing here to sell. No profiling and no automated decision-making happens about you.",
   },
 
   { kind: "h", text: "How long things are kept" },
@@ -92,7 +92,7 @@ export const PRIVACY: LegalBlock[] = [
   { kind: "h", text: "Your rights" },
   {
     kind: "p",
-    text: "Under the GDPR you have rights of access, correction, deletion, restriction, objection and portability over personal data held about you. In practice the only record here that could be tied to you is a payment row, and the link runs through Stripe. Email me from the address on your Stripe receipt, or send the receipt, and I'll delete the row. Some payment records may have to be kept for tax and accounting reasons, which is a legal obligation rather than a preference. You can also complain to your data protection authority — in Finland, the Office of the Data Protection Ombudsman.",
+    text: "Under the GDPR you have rights of access, correction, deletion, restriction, objection and portability over personal data held about you. In practice the only record here that could be tied to you is a payment row, and the link runs through Stripe. Email me from the address on your Stripe receipt, or send the receipt, and I'll delete the row. Some payment records may have to be kept for tax and accounting reasons, which is a legal obligation rather than a preference. You can also complain to your data protection authority, which in Finland is the Office of the Data Protection Ombudsman.",
   },
 
   { kind: "h", text: "Age" },
@@ -110,7 +110,7 @@ export const PRIVACY: LegalBlock[] = [
   { kind: "h", text: "Contact" },
   {
     kind: "p",
-    text: "There's a form at /contact. It goes to one person, so allow a couple of days for a reply. The form stores nothing — the message is forwarded and not kept.",
+    text: "There's a form at /contact. It goes to one person, so allow a couple of days for a reply. The form stores nothing: the message is forwarded and not kept.",
   },
   {
     kind: "p",
@@ -121,7 +121,7 @@ export const PRIVACY: LegalBlock[] = [
 export const TERMS: LegalBlock[] = [
   {
     kind: "p",
-    text: "The plain version: it's a $5 tool, run by one person, that fixes the dates on a copy of your own Snapchat export inside your browser. Use it on your own data, keep the original ZIP until you've checked the output, and if it doesn't work for you, ask for your money back.",
+    text: "The plain version: it's a $5 tool, run by one person, that fixes the dates on a copy of your own Snapchat export inside your browser. Use it on your own data, keep the original ZIP until you've checked the output, and if it can't handle your export, get in touch.",
   },
 
   { kind: "h", text: "What this is" },
@@ -133,13 +133,13 @@ export const TERMS: LegalBlock[] = [
   { kind: "h", text: "What it costs" },
   {
     kind: "p",
-    text: "The first 20 files are processed free, so you can open them and check the output before paying anything. $5 once removes the limit — one payment, not a subscription, and nothing renews. The unlock lives in the browser you paid in, so clearing site data or moving to another device loses it. If that happens, get in touch with your Stripe receipt and I'll sort it out.",
+    text: "The first 20 files are processed free, so you can open them and check the output before paying anything. $5 once removes the limit. It's one payment, not a subscription, and nothing renews. The unlock lives in the browser you paid in, so clearing site data or moving to another device loses it. If that happens, get in touch with your Stripe receipt and I'll sort it out.",
   },
 
   { kind: "h", text: "Refunds" },
   {
     kind: "p",
-    text: "Ask and you'll get one. You don't have to explain why.",
+    text: "If the tool can't process your export and I can't fix it, you get your $5 back. Get in touch within 14 days of paying, with your Stripe receipt and a description of what went wrong, and I'll either get it working or refund you. The first 20 files are free precisely so you can check it works on your own export before paying.",
   },
 
   { kind: "h", text: "Use it on your own data" },
@@ -167,7 +167,7 @@ export const TERMS: LegalBlock[] = [
   { kind: "h", text: "Liability" },
   {
     kind: "p",
-    text: "Nothing here limits liability for anything that can't legally be limited, including death, personal injury, or fraud. Beyond that: because the work happens entirely on your own device and I never hold your files, my liability for any claim connected to this site is limited to what you paid — $5, or nothing if you didn't pay.",
+    text: "Nothing here limits liability for anything that can't legally be limited, including death, personal injury, or fraud. Beyond that: because the work happens entirely on your own device and I never hold your files, my liability for any claim connected to this site is limited to what you paid: $5, or nothing if you didn't pay.",
   },
 
   { kind: "h", text: "Changes" },
