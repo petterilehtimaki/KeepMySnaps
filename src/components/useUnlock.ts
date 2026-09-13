@@ -12,19 +12,70 @@ export type UnlockStatus = "checking" | "locked" | "unlocked";
  * gets re-verified against Stripe on every load, so editing localStorage by
  * hand gains you nothing — you'd need an id belonging to a real completed
  * payment, and those only ever go to the person who made it.
+ *
+ * The answer has three values, not two. "paid" and "not-paid" are Stripe's
+ * word. "unknown" is everything else — a dropped connection, a timeout, the
+ * server or Stripe having a bad minute, a payment method that settles later —
+ * and it must never be treated as "not-paid", because the response to
+ * "not-paid" is forgetting the id, and a forgotten id is a customer who paid
+ * and can't get back in.
  */
-async function verify(sessionId: string): Promise<boolean> {
+type Verdict = "paid" | "not-paid" | "unknown";
+
+async function verify(sessionId: string): Promise<Verdict> {
   try {
     const res = await fetch("/api/unlock", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ sessionId }),
     });
-    if (!res.ok) return false;
-    const data = (await res.json()) as { unlocked?: boolean };
-    return data.unlocked === true;
+    if (!res.ok) return "unknown";
+    const data = (await res.json()) as { unlocked?: boolean; pending?: boolean };
+    if (data.unlocked === true) return "paid";
+    return data.pending ? "unknown" : "not-paid";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * A lagging request shouldn't lock a paid visitor out for the whole visit, so
+ * unknowns get two more tries a few seconds apart. Definite answers don't.
+ */
+async function verifyWithRetry(sessionId: string): Promise<Verdict> {
+  let verdict: Verdict = "unknown";
+  for (const delay of [0, 1500, 4000]) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    verdict = await verify(sessionId);
+    if (verdict !== "unknown") break;
+  }
+  return verdict;
+}
+
+// localStorage can throw outright (storage disabled, some private modes), so
+// every touch is wrapped rather than letting one exception wedge the check.
+function readStored(): string | null {
+  try {
+    return window.localStorage.getItem(UNLOCK_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function store(sessionId: string): boolean {
+  try {
+    window.localStorage.setItem(UNLOCK_STORAGE_KEY, sessionId);
+    return true;
   } catch {
     return false;
+  }
+}
+
+function forget() {
+  try {
+    window.localStorage.removeItem(UNLOCK_STORAGE_KEY);
+  } catch {
+    // Nothing to clean up if storage isn't there.
   }
 }
 
@@ -35,27 +86,42 @@ function stripSessionFromUrl() {
   window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+async function checkStored(sessionId: string): Promise<boolean> {
+  const verdict = await verifyWithRetry(sessionId);
+  // Only a definite "no" clears it. An unknown is kept for the next load.
+  if (verdict === "not-paid") forget();
+  return verdict === "paid";
+}
+
 async function resolveUnlock(): Promise<boolean> {
   const fromUrl = new URLSearchParams(window.location.search).get("session_id");
-  const stored = window.localStorage.getItem(UNLOCK_STORAGE_KEY);
-  const sessionId = fromUrl ?? stored;
+  const stored = readStored();
 
-  if (!sessionId) return false;
+  if (!fromUrl) return stored ? checkStored(stored) : false;
 
-  const ok = await verify(sessionId);
+  // A fresh id from Stripe's redirect is saved before it's checked, not after.
+  // If the check fails, or the page is refreshed while it's running, the id
+  // has to survive somewhere — and since it's re-verified on every load,
+  // keeping an unverified one costs nothing.
+  const saved = store(fromUrl);
+  const verdict = await verifyWithRetry(fromUrl);
 
-  if (ok) {
-    window.localStorage.setItem(UNLOCK_STORAGE_KEY, sessionId);
-  } else if (stored) {
-    // A stored id that no longer checks out is just clutter.
-    window.localStorage.removeItem(UNLOCK_STORAGE_KEY);
+  if (verdict === "not-paid") {
+    stripSessionFromUrl();
+    // A bad link mustn't cost someone an earlier, genuine unlock.
+    if (stored && stored !== fromUrl) {
+      store(stored);
+      return checkStored(stored);
+    }
+    forget();
+    return false;
   }
 
-  // Tidy the address bar either way, so the id isn't sitting in the URL to be
-  // copied into a group chat.
-  stripSessionFromUrl();
-
-  return ok;
+  // Paid, or not known yet. Either way the id is in storage now, so tidy the
+  // address bar so it isn't copied into a group chat — unless the browser
+  // refused to store it, in which case the URL is the only copy there is.
+  if (saved) stripSessionFromUrl();
+  return verdict === "paid";
 }
 
 export function useUnlock() {
