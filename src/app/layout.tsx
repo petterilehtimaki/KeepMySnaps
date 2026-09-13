@@ -12,9 +12,9 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const TITLE = "KeepMySnaps — Save your Snapchat memories before they're gone";
+const TITLE = "KeepMySnaps — Keep your Snapchat memories without paying to open them";
 const DESCRIPTION =
-  "Snapchat is deleting memories over 5GB. KeepMySnaps takes the export ZIP they email you and puts the real dates, GPS and captions back into your photos — entirely in your browser. Nothing is uploaded.";
+  "From January 2027 Snapchat locks old Memories over 5GB behind a storage plan. KeepMySnaps takes the export ZIP they email you and puts the real dates, GPS and captions back into your photos — entirely in your browser. Nothing is uploaded.";
 const SHARE_DESCRIPTION =
   "Restore the real dates, GPS and captions Snapchat strips out of your memories export. Runs in your browser. Nothing uploaded.";
 

@@ -18,6 +18,7 @@ import {
 import { writeExif, isJpeg } from "./exif";
 import { burnOverlayIntoVideo, canRewriteVideo } from "./video";
 import { drawCovering } from "./compose";
+import { stampMp4CreationTime } from "./mp4time";
 
 export class NotASnapchatExport extends Error {}
 
@@ -330,6 +331,12 @@ export async function processExport(
     } else {
       summary.videos++;
 
+      // A video has no EXIF, but its headers carry a creation time, and that
+      // is what Photos, iCloud and Google Photos read. Snapchat usually fills
+      // it in correctly; writing the entry's time anyway means every file on
+      // the way out agrees with the index, rather than trusting two sources.
+      if (entry?.takenAt != null) stampMp4CreationTime(bytes, entry.takenAt);
+
       // Two thirds of the captions in a real export belong to videos, and a
       // video has nowhere to keep a picture — so the only way to make the
       // caption part of the file is to decode it, draw the overlay on every
@@ -355,7 +362,7 @@ export async function processExport(
           let bitmap: ImageBitmap | null = null;
           try {
             bitmap = await decode(overlayBytes, "image/png");
-            burned = await burnOverlayIntoVideo(bytes, bitmap, signal);
+            burned = await burnOverlayIntoVideo(bytes, bitmap, signal, entry?.takenAt ?? null);
           } catch {
             burned = null;
           } finally {
@@ -425,7 +432,7 @@ export async function processExport(
       ...(summary.videoCaptionsKept
         ? [`Captions saved beside videos: ${summary.videoCaptionsKept}`]
         : []),
-      `Videos (renamed and timestamped — video files can't hold EXIF): ${summary.videos}`,
+      `Videos (capture time written into the file): ${summary.videos}`,
       "",
       "About the locations",
       "",

@@ -32,7 +32,7 @@ export const FAQS: FaqItem[] = [
   },
   {
     q: "What about videos?",
-    a: "Their captions get drawn back into the video itself, frame by frame, right here in the tab. Dates ride on the filename and the file's own timestamp rather than EXIF, because an MP4 has nowhere to put one — but the text, stickers and geofilters end up baked into the picture the way they were when you posted it.",
+    a: "Their captions get drawn back into the video itself, frame by frame, right here in the tab. The capture date goes into the video's own header — an MP4 has no EXIF, but that header is exactly what photo apps read for a video's date — and the text, stickers and geofilters end up baked into the picture the way they were when you posted it.",
   },
   {
     q: "Why do some photos have no location?",

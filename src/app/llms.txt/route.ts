@@ -35,9 +35,12 @@ because MP4 has nowhere to store EXIF.
 
 ## Deadline
 
-Snapchat's 5GB Memories limit rolled out on 26 September 2025 with a 12-month
-grace period, so ${DEADLINE_TEXT} is the earliest date deletion can begin. The
-rollout is per-account from then on — it is not a universal cut-off hour.
+There is no September 2026 deletion. Snapchat's support page says it will not
+delete Memories over the 5GB limit. Starting in January 2027 at the earliest
+(${DEADLINE_TEXT}), Memories more than a year old that aren't part of a user's
+oldest 5GB are archived: they stay on Snapchat as thumbnails, and opening,
+editing or sharing them needs a paid storage plan. 26 September 2026 is the end
+of the 12-month temporary storage window, not a deletion date.
 
 ## Price
 
@@ -49,7 +52,7 @@ files. Refunds on request.
 ${[
   ["Home and uploader", "/"],
   ["How it works — requesting the export, step by step", "/how-it-works"],
-  ["When Snapchat can start deleting Memories, and what to do", "/september-2026-deadline"],
+  ["Whether Snapchat is deleting Memories in September 2026 (it isn't), and what actually changes", "/september-2026-deadline"],
   ["How long the export takes, and what arrives broken", "/waiting-for-your-export"],
   ["FAQ", "/faq"],
   ["Contact — a form, not an address", "/contact"],

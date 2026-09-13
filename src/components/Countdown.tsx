@@ -5,14 +5,37 @@ import { DEADLINE } from "@/lib/config";
 
 type Parts = { days: number; hours: number; minutes: number; seconds: number };
 
-function partsUntil(target: number, now: number): Parts {
-  const totalSeconds = Math.max(0, Math.floor((target - now) / 1000));
-  return {
-    days: Math.floor(totalSeconds / 86400),
-    hours: Math.floor((totalSeconds % 86400) / 3600),
-    minutes: Math.floor((totalSeconds % 3600) / 60),
-    seconds: totalSeconds % 60,
-  };
+/**
+ * Before the deadline this is a countdown. After it, it isn't — and a countdown
+ * frozen at 0:00:00:00 under "Snapchat can start locking old memories in" reads as
+ * a site nobody maintains, which is a bad look on the exact day the second
+ * wave of visitors turns up.
+ *
+ * Decided in the browser rather than at build time: the pages are prerendered
+ * before the date and there is no rebuild scheduled for it, so only the
+ * visitor's clock can know which side of the line they're on. The initial
+ * render is the neutral placeholder on both server and client, so there is no
+ * hydration mismatch either side of midnight.
+ */
+type State =
+  | { kind: "before"; parts: Parts }
+  | { kind: "after"; days: number }
+  | null;
+
+function stateAt(now: number): Exclude<State, null> {
+  if (now < DEADLINE) {
+    const totalSeconds = Math.floor((DEADLINE - now) / 1000);
+    return {
+      kind: "before",
+      parts: {
+        days: Math.floor(totalSeconds / 86400),
+        hours: Math.floor((totalSeconds % 86400) / 3600),
+        minutes: Math.floor((totalSeconds % 3600) / 60),
+        seconds: totalSeconds % 60,
+      },
+    };
+  }
+  return { kind: "after", days: Math.floor((now - DEADLINE) / 86_400_000) };
 }
 
 const numberClass =
@@ -26,6 +49,9 @@ const colonClass =
 const labelClass =
   "mt-4 text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-muted-cool " +
   "sm:text-[0.6875rem] sm:tracking-[0.18em]";
+
+const eyebrowClass =
+  "text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted";
 
 /** Full words have room on desktop; four columns don't have it on a phone. */
 const UNITS = [
@@ -48,25 +74,56 @@ function Label({ unit }: { unit: (typeof UNITS)[number] }) {
   );
 }
 
-export default function Countdown() {
-  const [parts, setParts] = useState<Parts | null>(null);
+function Eyebrow({ state }: { state: State }) {
+  return (
+    <p className={eyebrowClass}>
+      {state?.kind === "after"
+        ? "Snapchat can now lock old memories over 5GB"
+        : "Snapchat can start locking old memories in"}
+    </p>
+  );
+}
+
+export default function Countdown({
+  withEyebrow = false,
+}: {
+  /** Render the line above the numbers too, so it flips with them. */
+  withEyebrow?: boolean;
+}) {
+  const [state, setState] = useState<State>(null);
 
   useEffect(() => {
-    const tick = () => setParts(partsUntil(DEADLINE, Date.now()));
+    const tick = () => setState(stateAt(Date.now()));
     tick();
-    // One second, now that there's a seconds column to move.
-    const id = window.setInterval(tick, 1000);
+    // Every second while there are seconds to count; once the deadline has
+    // passed the only thing that changes is the day, so a minute is plenty.
+    const id = window.setInterval(tick, Date.now() < DEADLINE ? 1000 : 60_000);
     return () => window.clearInterval(id);
   }, []);
 
-  const show = (n: number | undefined, padded: boolean) =>
-    parts === null || n === undefined
-      ? "––"
-      : padded
-        ? String(n).padStart(2, "0")
-        : String(n);
+  const after = state?.kind === "after" ? state : null;
+  const parts = state?.kind === "before" ? state.parts : null;
 
-  return (
+  const body = after ? (
+    <div
+      className="inline-flex flex-col items-center"
+      role="status"
+      aria-label={
+        after.days === 0
+          ? "Archiving can begin from today"
+          : `Archiving has been allowed for ${plural(after.days, "day")}`
+      }
+    >
+      <span className={numberClass}>
+        {after.days === 0 ? "Today" : after.days}
+      </span>
+      <span className={labelClass}>
+        {after.days === 0
+          ? "locking can begin"
+          : `${after.days === 1 ? "day" : "days"} since locking could begin`}
+      </span>
+    </div>
+  ) : (
     <div
       className="inline-grid grid-cols-[auto_auto_auto_auto_auto_auto_auto] items-baseline justify-items-center gap-x-[0.22em] sm:gap-x-[0.3em]"
       role="timer"
@@ -77,31 +134,62 @@ export default function Countdown() {
         parts
           ? `${plural(parts.days, "day")}, ${plural(parts.hours, "hour")}, ` +
             `${plural(parts.minutes, "minute")} and ${plural(parts.seconds, "second")} ` +
-            "until deletions can begin"
+            "until archiving can begin"
           : "Counting down"
       }
     >
-      <span className={numberClass}>{show(parts?.days, false)}</span>
-      <span className={colonClass} aria-hidden="true">
-        :
-      </span>
-      <span className={numberClass}>{show(parts?.hours, true)}</span>
-      <span className={colonClass} aria-hidden="true">
-        :
-      </span>
-      <span className={numberClass}>{show(parts?.minutes, true)}</span>
-      <span className={colonClass} aria-hidden="true">
-        :
-      </span>
-      <span className={numberClass}>{show(parts?.seconds, true)}</span>
-
-      <Label unit={UNITS[0]} />
-      <span aria-hidden="true" />
-      <Label unit={UNITS[1]} />
-      <span aria-hidden="true" />
-      <Label unit={UNITS[2]} />
-      <span aria-hidden="true" />
-      <Label unit={UNITS[3]} />
+      {(["days", "hours", "minutes", "seconds"] as const).map((key, i) => (
+        <FragmentCell
+          key={key}
+          value={
+            parts === null
+              ? "––"
+              : i === 0
+                ? String(parts[key])
+                : String(parts[key]).padStart(2, "0")
+          }
+          last={i === 3}
+        />
+      ))}
+      {UNITS.map((unit, i) => (
+        <FragmentLabel key={unit.long} unit={unit} last={i === 3} />
+      ))}
     </div>
+  );
+
+  if (!withEyebrow) return body;
+  return (
+    <>
+      <Eyebrow state={state} />
+      <div className="mt-8 sm:mt-10">{body}</div>
+    </>
+  );
+}
+
+function FragmentCell({ value, last }: { value: string; last: boolean }) {
+  return (
+    <>
+      <span className={numberClass}>{value}</span>
+      {!last && (
+        <span className={colonClass} aria-hidden="true">
+          :
+        </span>
+      )}
+    </>
+  );
+}
+
+function FragmentLabel({
+  unit,
+  last,
+}: {
+  unit: (typeof UNITS)[number];
+  last: boolean;
+}) {
+  return (
+    <>
+      <Label unit={unit} />
+      {!last && <span aria-hidden="true" />}
+    </>
   );
 }

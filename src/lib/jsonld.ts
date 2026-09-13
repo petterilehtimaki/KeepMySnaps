@@ -78,9 +78,9 @@ export function deadlineEvent() {
   return {
     "@context": "https://schema.org",
     "@type": "Event",
-    name: "Snapchat can begin deleting Memories over 5GB",
+    name: "Snapchat can begin archiving Memories over 5GB",
     description:
-      "Snapchat's 5GB Memories storage policy rolled out on 26 September 2025 with a 12-month grace period. 26 September 2026 is the earliest date deletion can begin; the rollout is per-account from then on.",
+      "Snapchat will archive Memories that are more than a year old and outside a user's oldest 5GB, starting no earlier than January 2027 and with advance notice in the app. Archived Memories are not deleted: they remain on Snapchat as thumbnails that require a paid storage plan to open, edit or share.",
     startDate: new Date(DEADLINE).toISOString(),
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",

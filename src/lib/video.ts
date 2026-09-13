@@ -18,6 +18,7 @@
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 import type { ISOFile, Matrix, Movie, Sample } from "mp4box";
 import { drawCovering } from "./compose";
+import { stampMp4CreationTime } from "./mp4time";
 
 type Track = {
   id: number;
@@ -176,6 +177,8 @@ export async function burnOverlayIntoVideo(
   videoBytes: Uint8Array,
   overlay: ImageBitmap,
   signal?: AbortSignal,
+  /** The memory's capture time. Falls back to the source file's own. */
+  takenAt?: number | null,
 ): Promise<Uint8Array | null> {
   if (!canRewriteVideo()) return null;
 
@@ -353,7 +356,15 @@ export async function burnOverlayIntoVideo(
 
     muxer.finalize();
     const { buffer } = muxer.target as ArrayBufferTarget;
-    return buffer ? new Uint8Array(buffer) : null;
+    if (!buffer) return null;
+    const out = new Uint8Array(buffer);
+
+    // The muxer stamps every header with the moment the file was built. Left
+    // alone, a captioned video would land in Photos on the day it was fixed —
+    // the exact problem this exists to undo. Put the real time back.
+    const when = takenAt ?? parsed.info.created?.getTime();
+    if (when != null) stampMp4CreationTime(out, when);
+    return out;
   } catch {
     return null;
   } finally {
