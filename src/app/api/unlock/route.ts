@@ -63,6 +63,12 @@ export async function POST(request: Request) {
       ((session.amount_total ?? 0) >= PRICE_CENTS &&
         (session.currency ?? PRICE_CURRENCY).toLowerCase() === PRICE_CURRENCY);
 
+    // Some payment methods settle after the customer has been sent back. That
+    // isn't a "no" yet, and the browser has to keep the id to ask again later.
+    if (session.status === "complete" && session.payment_status === "unpaid") {
+      return NextResponse.json({ unlocked: false, pending: true });
+    }
+
     if (!paid || !rightAmount || session.status !== "complete") {
       return NextResponse.json({ unlocked: false });
     }
@@ -87,9 +93,18 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ unlocked: true });
   } catch (err) {
-    // An unknown session id lands here too — Stripe 404s on ids it doesn't
-    // recognise, which is not an error worth alarming anyone about.
+    // Stripe 404s on ids it doesn't recognise: a real "no", and not worth
+    // logging. Anything else — a timeout, a network failure, an outage, a bad
+    // key — is not an answer about the payment. Replying "not paid" would make
+    // the browser forget a genuine customer's id, so it's a 502 instead, which
+    // the browser treats as "ask again".
+    if ((err as { statusCode?: number }).statusCode === 404) {
+      return NextResponse.json({ unlocked: false });
+    }
     console.error("[unlock] stripe verification failed", err);
-    return NextResponse.json({ unlocked: false });
+    return NextResponse.json(
+      { error: "Couldn't confirm the payment with Stripe right now." },
+      { status: 502 },
+    );
   }
 }
