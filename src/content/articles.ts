@@ -340,7 +340,7 @@ export const ARTICLES: Article[] = [
       },
       {
         kind: "p",
-        text: "Memory. A phone has far less room to work in than a laptop, and a multi-gigabyte archive is a lot to hold. If Safari reloads the page partway through, that's what happened. Feeding it one part of a split export at a time works around it, at the cost of doing it several times.",
+        text: "Memory. A phone has far less room to work in than a laptop, and a multi-gigabyte archive is a lot to hold. If Safari reloads the page partway through, that's what happened. Smaller batches work around it, but every batch needs part one of a split export, because only part one holds the JSON with your dates in it: run part one with part two, then part one with part three, and skip the repeats of part one's own memories.",
       },
       { kind: "h", text: "Storage, before you start" },
       {
@@ -714,6 +714,173 @@ export const ARTICLES: Article[] = [
       text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free.",
       href: "/stop-paying-snapchat-storage",
       label: "Cancelling Snapchat's plan",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "on-windows",
+    crumb: "On Windows",
+    eyebrow: "Windows PC",
+    h1: "How to fix a Snapchat export on a Windows PC",
+    title: "Fix a Snapchat Memories export on Windows — KeepMySnaps",
+    description:
+      "Nothing to install. Use Chrome or Edge, hand over every ZIP without unzipping, keep the tab awake, and check the dates in File Explorer afterwards.",
+    lead: "Open the site in Chrome or Edge, give it every ZIP at once without unzipping any of them, and keep the tab in front until it finishes. There's nothing to install — everything this needs is already in the browser. The two things that catch people out on a PC are unzipping Snapchat's archive first, and the browser or Windows putting the tab to sleep halfway through.",
+    blocks: [
+      { kind: "h", text: "Step by step" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "In Snapchat: Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, choose All Time, submit." },
+          { lead: "2.", text: "When the email arrives, download every part into your Downloads folder. Leave them as ZIPs." },
+          { lead: "3.", text: "Open keepmysnaps.com in Chrome or Edge, click Choose file, and select every ZIP at once — click the first, then Shift-click the last. Dragging them all onto the page works too." },
+          { lead: "4.", text: "Leave the tab in front and the PC awake while it works." },
+          { lead: "5.", text: "Save keepmysnaps.zip when it's done, right-click it and choose Extract All. You get a KeepMySnaps folder." },
+        ],
+      },
+      { kind: "h", text: "Why Chrome or Edge" },
+      {
+        kind: "p",
+        text: "Photos only need dates and coordinates written into them, which any modern browser manages. Captioned videos are the demanding part: the caption has to be drawn onto every frame and the video encoded again, using the video encoder built into the browser, and Chrome and Edge both have one on Windows. When a video can't be re-encoded, its caption isn't thrown away — it's saved as a PNG in a captions folder beside the videos. If you used another browser and got a captions folder, a second run in Chrome or Edge is worth it.",
+      },
+      { kind: "h", text: "Don't unzip Snapchat's ZIPs first" },
+      {
+        kind: "p",
+        text: "Extract All on Snapchat's download gives you undated files and a json folder, and there's nothing useful to do with them in that state. Every part also contains its own memories folder, so unzipping a split export leaves you merging folders by hand, which is where files go missing. Hand the ZIPs over exactly as they arrived; they're pooled automatically, and the JSON in part one is applied to the media in every other part.",
+      },
+      { kind: "h", text: "Keep the tab awake" },
+      {
+        kind: "p",
+        text: "A large library takes a while, and a tab that stops running stops working through your archive. Edge's sleeping tabs and Chrome's Memory Saver can both put a background tab to sleep, and a PC that goes to sleep takes the tab with it. Leave the tab in front, keep a laptop plugged in, and set Windows not to sleep in its power settings until it's done.",
+      },
+      { kind: "h", text: "If the tab crashes on a big export" },
+      {
+        kind: "p",
+        text: "The archive is opened in the browser's memory, so a very large export on a PC without much RAM can crash the tab. Close other tabs and try again. If it still fails, run it in smaller batches — but every batch has to include part one, because only part one holds the JSON with your dates in it. Run part one with part two, then part one with part three, and so on. Part one's own memories come out again each time with the same names, so choose Skip when Windows asks about replacing files as you merge the folders.",
+      },
+      { kind: "h", text: "Checking the dates in File Explorer" },
+      {
+        kind: "p",
+        text: "Open the KeepMySnaps folder, switch to Details view, right-click a column heading, choose More, and tick Date taken and Media created. Photos show their capture date under Date taken, and videos show theirs under Media created — the same fields photo apps read when you import them. If those columns look right here, they'll look right in iCloud, Google Photos or Immich.",
+      },
+    ],
+    closer: {
+      title: "Try it with 20 files first",
+      text: "The first 20 memories are free, so you can check their dates in File Explorer before deciding whether the rest are worth $5. Nothing is uploaded either way.",
+      href: "/snapchat-memories-to-google-photos",
+      label: "Then Google Photos",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-to-immich",
+    crumb: "To Immich",
+    eyebrow: "Moving them",
+    h1: "How to move Snapchat memories to Immich with the right dates",
+    title: "Move Snapchat memories to Immich with correct dates — KeepMySnaps",
+    description:
+      "Import Snapchat's raw export into Immich and it all lands on the day you downloaded it. Here's what Immich reads, and how to upload a fixed library with the CLI.",
+    lead: "Fix the dates before Immich sees the files. When a file carries no date of its own, Immich falls back to the earlier of the file's created and modified times — for a Snapchat export, the day you downloaded it. Once the capture time is written inside each file, as EXIF in photos and in the MP4 header in videos, Immich reads it and every memory goes back to the year it came from.",
+    blocks: [
+      { kind: "h", text: "What Immich reads" },
+      {
+        kind: "p",
+        text: "Immich runs every upload through exiftool and takes the first date it finds from a fixed list of tags. DateTimeOriginal is near the top of that list, which covers photos. CreateDate and MediaCreateDate come after it, and those are the MP4 header fields a video's capture time lives in. Only when none of them is there does it fall back to the file's own timestamps. That order is from Immich's source code, not a guess about its behaviour.",
+      },
+      { kind: "h", text: "Uploading a whole library with the CLI" },
+      {
+        kind: "p",
+        text: "For thousands of files, Immich's command-line tool is more dependable than dragging a folder into a browser tab. It needs Node.js, and an API key you create under API Keys in your Immich account settings.",
+      },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1. Install it:", text: "npm i -g @immich/cli" },
+          { lead: "2. Log in:", text: "immich login https://your-immich-server/api YOUR_API_KEY" },
+          { lead: "3. Try it without uploading:", text: "immich upload --dry-run --recursive KeepMySnaps" },
+          { lead: "4. Then for real:", text: "immich upload --album-name \"Snapchat\" --ignore \"**/captions/**\" --recursive KeepMySnaps" },
+        ],
+      },
+      {
+        kind: "p",
+        text: "--album-name puts everything into one album as well as the timeline. --ignore leaves out the captions folder, which only exists if some video captions couldn't be drawn into their videos; those PNGs would otherwise show up in your timeline as transparent images. Avoid --album on its own here, since it names albums after folders and you'd get one called captions.",
+      },
+      { kind: "h", text: "From the web or the phone app" },
+      {
+        kind: "p",
+        text: "Dragging the unzipped folder into Immich's web page works the same way for a smaller library, because the dates are inside the files rather than in how they were uploaded. On a phone, save the fixed files into your photo library and let the Immich app's backup pick them up.",
+      },
+      { kind: "h", text: "Locations" },
+      {
+        kind: "p",
+        text: "Photos carry their GPS coordinates in EXIF, and Immich turns those into place names and pins on its map. Videos from this tool carry their date but no location. And where a day's memories were taken far apart, no coordinate is written at all rather than a guessed one — the CSV in the ZIP marks every memory exact, approximate or blank.",
+      },
+      { kind: "h", text: "If the times look a few hours out" },
+      {
+        kind: "p",
+        text: "Snapchat records every capture time in UTC, and that's what gets written. The order of your memories is always right, but the clock time on one can be off from your local time by your time-zone difference, and a snap taken close to midnight can land on the day either side.",
+      },
+    ],
+    closer: {
+      title: "Fix them before Immich sees them",
+      text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free, so you can upload a test batch and check the timeline before doing the rest.",
+      href: "/snapchat-memories-to-synology-photos",
+      label: "Or Synology Photos",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-to-synology-photos",
+    crumb: "To Synology Photos",
+    eyebrow: "Moving them",
+    h1: "How to move Snapchat memories to Synology Photos with the right dates",
+    title: "Move Snapchat memories to Synology Photos with correct dates — KeepMySnaps",
+    description:
+      "Synology Photos dates a photo from its EXIF and falls back to the modified time when there's none. Fix the export first, copy it onto the NAS, and check the videos.",
+    lead: "Fix the dates first, then copy the folder onto the NAS. Synology's own documentation says that when a file has no capture date, Synology Photos uses its most recent modification time — so a raw Snapchat export lands on the day you copied it over. With the date written into each photo's EXIF, Photos files it under the day it was taken. Videos are less predictable, and they're the part worth checking.",
+    blocks: [
+      { kind: "h", text: "Getting them onto the NAS" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "Copy the folder in.", text: "Best for a whole library. Unzip the result on your computer, then copy the KeepMySnaps folder into /home/Photos for your Personal Space, or /photo for Shared Space, using File Station or a mapped network drive. Synology Photos indexes it from there." },
+          { lead: "Or upload through Synology Photos.", text: "Synology says drag-and-drop takes at most 5,000 files per upload, and uploading a whole folder only works in Chrome and Edge. Uploads made in Timeline View are sorted into folders by date taken — which is exactly what goes wrong with an unfixed export." },
+          { lead: "Or from a phone.", text: "Save the fixed files into your photo library and let the Synology Photos app back them up." },
+        ],
+      },
+      { kind: "h", text: "What Synology Photos reads" },
+      {
+        kind: "p",
+        text: "For photos, the EXIF date taken. When you edit Date taken in Synology Photos, it writes the change to the DateTime and DateTimeOriginal tags, which are the same ones this site fills in. When a file has no capture date at all, Synology says it uses the file's most recent modification time instead.",
+      },
+      { kind: "h", text: "Check the videos" },
+      {
+        kind: "p",
+        text: "Synology doesn't document which field it reads a video's date from. The fixed videos carry their capture time in the MP4 header, which is where other photo apps look for it, but Synology's forums have threads about videos landing on their upload date despite correct metadata. So once indexing finishes, open a handful of videos and look at their dates.",
+      },
+      {
+        kind: "p",
+        text: "If some are wrong, select them and edit the date and time as a batch. Synology notes that this edit isn't written back into a video file, so keep the CSV from the ZIP — it lists every memory's real capture time, and that's the record to go back to if you ever move the library.",
+      },
+      { kind: "h", text: "Locations" },
+      {
+        kind: "p",
+        text: "Photos keep their GPS coordinates, and Synology Photos turns them into place names. It can't read a location from a video at all, whichever tool wrote it. And where a day's memories were too far apart, no coordinate is written in the first place rather than a guessed one.",
+      },
+      { kind: "h", text: "Leave the captions folder out" },
+      {
+        kind: "p",
+        text: "If some video captions couldn't be drawn into their videos, they're saved as transparent PNGs in a captions subfolder. Synology Photos would index those as photos, so move that folder somewhere outside /home/Photos and /photo before copying the rest in.",
+      },
+    ],
+    closer: {
+      title: "Fix them before they go on the NAS",
+      text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free, so you can copy a small batch over and see how your NAS dates it before doing the rest.",
+      href: "/snapchat-memories-to-immich",
+      label: "Or Immich",
     },
   },
 ];
