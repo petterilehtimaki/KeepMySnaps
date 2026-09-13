@@ -22,6 +22,14 @@ export type Block =
 
 export type Article = {
   slug: string;
+  /** YYYY-MM-DD: when the page first went live. */
+  published: string;
+  /**
+   * YYYY-MM-DD: when its words last changed. Drives the date shown on the
+   * page, the sitemap's lastmod and the Article schema, so bump it with any
+   * copy edit and leave it alone otherwise.
+   */
+  updated: string;
   crumb: string;
   eyebrow: string;
   h1: string;
@@ -43,6 +51,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "is-it-safe",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Is it safe?",
     eyebrow: "Privacy",
     h1: "Is it safe to upload your Snapchat export?",
@@ -101,6 +111,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "fix-snapchat-dates",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Wrong dates",
     eyebrow: "The main problem",
     h1: "Why is every Snapchat photo the same date?",
@@ -125,7 +137,7 @@ export const ARTICLES: Article[] = [
       },
       {
         kind: "p",
-        text: "The filename carries the date, which is why the day always comes out right. Within a day, when several memories share it, the entries can be told apart by media type (the JSON says Image or Video and the extension agrees), but not much further. That's a real limit, not a shortcut, and it's why locations are handled the way they are.",
+        text: "The filename carries the date, which is why the day always comes out right. Within a day, when several memories share it, the entries can be told apart by media type (the JSON says Image or Video and the extension agrees), but not much further. That's a real limit, not a shortcut, and it's why [locations are handled the way they are](/restore-snapchat-location).",
       },
       { kind: "h", text: "Doing it yourself" },
       {
@@ -148,6 +160,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "merge-snapchat-captions",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Missing captions",
     eyebrow: "Captions and filters",
     h1: "Where did the captions on my Snapchat memories go?",
@@ -191,6 +205,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "restore-snapchat-location",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Missing locations",
     eyebrow: "Locations",
     h1: "Why do my Snapchat photos have no location?",
@@ -238,6 +254,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "export-link-expired",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Link expired",
     eyebrow: "Download links",
     h1: "My Snapchat export link expired. Now what?",
@@ -264,7 +282,7 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "Are my Memories gone?" },
       {
         kind: "p",
-        text: "No. An expired link only means the archive Snapchat built for you was cleaned up; your Memories are still in your account and can be exported again. Snapchat has said it won't delete Memories over the storage limit. From January 2027 it archives them instead, as thumbnails that need a paid plan to open, so a fresh export gets you the full-quality files either way.",
+        text: "No. An expired link only means the archive Snapchat built for you was cleaned up; your Memories are still in your account and can be exported again. [Snapchat has said](/september-2026-deadline) it won't delete Memories over the storage limit. From January 2027 it archives them instead, as thumbnails that need a paid plan to open, so a fresh export gets you the full-quality files either way.",
       },
     ],
     closer: {
@@ -278,6 +296,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "multiple-zip-files",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Multiple ZIPs",
     eyebrow: "Split exports",
     h1: "Snapchat sent me several ZIP files. Which one do I use?",
@@ -312,7 +332,98 @@ export const ARTICLES: Article[] = [
 
   /* ------------------------------------------------------------------ */
   {
+    slug: "my-eyes-only-snapchat-export",
+    published: "2026-09-13",
+    updated: "2026-09-13",
+    crumb: "My Eyes Only",
+    eyebrow: "Before you export",
+    h1: "Are My Eyes Only snaps in the Snapchat export?",
+    title: "Are My Eyes Only snaps included in a Snapchat export? | KeepMySnaps",
+    description:
+      "Don't count on it. Snapchat's export instructions never mention My Eyes Only, so move those snaps back to Memories before you request your data, and be careful with a forgotten passcode.",
+    lead: "Don't count on it. Snapchat's instructions for exporting Memories never mention My Eyes Only, and tools that process these exports, SnapEasy included, tell people to move snaps out of the vault before requesting their data. The safe move costs nothing: open My Eyes Only, move anything you want to keep back into Memories, and only then request the export.",
+    blocks: [
+      { kind: "h", text: "Do this before you request the export" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "Swipe up from the camera to open Memories, swipe left to the My Eyes Only tab, and enter your passcode." },
+          { lead: "2.", text: "Select the snaps you want to keep and move them out of My Eyes Only, back into Memories." },
+          { lead: "3.", text: "Request the export: Settings → Privacy Controls → My Data, with Export your Memories and Export JSON Files ticked and the date range switched off." },
+          { lead: "4.", text: "If you want them private again, move them back into My Eyes Only once the export has arrived and you've downloaded every part." },
+        ],
+      },
+      { kind: "h", text: "If you've forgotten the passcode" },
+      {
+        kind: "p",
+        text: "Slow down here. Snapchat's reset option for a forgotten My Eyes Only passcode deletes the vault: resetting wipes the \"Snaps saved with your former passcode\", and Snapchat Support can't recover them or the old passcode for you.",
+      },
+      {
+        kind: "p",
+        text: "So if you can't remember it, try every code you're likely to have used before you touch Forgot Passcode. Resetting is a one-way door, and it's the one way to lose those snaps for certain.",
+      },
+      { kind: "h", text: "Checking afterwards" },
+      {
+        kind: "p",
+        text: "When the export arrives, look for a few private snaps you know should be there. If they're missing, the vault is the likely reason, and the fix is another export after moving them out. A new request is free; it just means [waiting again](/waiting-for-your-export).",
+      },
+    ],
+    closer: {
+      title: "Once they're back in Memories",
+      text: "Export as usual. The archive arrives with the dates, locations and captions stripped out, and this site puts them back in your browser, with nothing uploaded. The first 20 files are free.",
+      href: "/snapchat-export-missing-memories",
+      label: "Other missing memories",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-export-missing-memories",
+    published: "2026-09-13",
+    updated: "2026-09-13",
+    crumb: "Missing memories",
+    eyebrow: "Checking the export",
+    h1: "Why are some memories missing from my Snapchat export?",
+    title: "Snapchat export missing memories | KeepMySnaps",
+    description:
+      "A few percent missing is normal. A lot missing usually means a setting on the request, a ZIP part that didn't download, or snaps in My Eyes Only. The usual causes, and which ones can be fixed.",
+    lead: "Usually one of a handful of things, and most of them are fixable. A small gap is normal: in one real export, Snapchat's list had 3,792 memories and the archive held files for 3,639 of them, so about 4% were listed but never shipped. A big gap almost always means a setting on the request, a ZIP part that didn't download, or snaps sitting in My Eyes Only.",
+    blocks: [
+      { kind: "h", text: "Work through these in order" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "The date range.", text: "Snapchat's My Data page lets you pick a date range, and anything outside it isn't included. To get everything, switch the date range off when you make the request." },
+          { lead: "A ZIP part that didn't download.", text: "Large exports arrive as several ZIPs, and each part holds different memories. One missing part is a whole chunk of your library. [How split exports work](/multiple-zip-files)." },
+          { lead: "My Eyes Only.", text: "Snapchat's export instructions don't mention the vault, so don't count on those snaps being included. Move them back into Memories and export again. [More on My Eyes Only](/my-eyes-only-snapchat-export)." },
+          { lead: "Export your Memories wasn't ticked.", text: "Without it the archive holds your account history and no pictures at all." },
+          { lead: "Snaps that were never Memories.", text: "A Memories export covers Memories. A snap you only sent, or only kept in a chat, was never one of them." },
+        ],
+      },
+      { kind: "h", text: "The few percent that are simply gone" },
+      {
+        kind: "p",
+        text: "Even with every setting right, the list and the files may not match exactly. Those are memories Snapchat lists but didn't include a file for, and no tool can recover a file that isn't in the archive. Worth knowing before you spend an evening hunting for them.",
+      },
+      { kind: "h", text: "If they're missing from the app too" },
+      {
+        kind: "p",
+        text: "That's a different problem, and an export can't bring back what Snapchat no longer has. Snapchat's advice is to update the app, clear the cache in Settings (which it says doesn't delete Memories) and turn the phone off and on again. If they're still missing after that, Snapchat says they're lost, and Support can't recover deleted Memories either.",
+      },
+    ],
+    closer: {
+      title: "Once the export is complete",
+      text: "The archive arrives with the dates, locations and captions stripped out. This site puts them back in your browser, with nothing uploaded. The first 20 files are free, so you can check the result before paying.",
+      href: "/multiple-zip-files",
+      label: "Split exports",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
     slug: "on-iphone",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "On iPhone",
     eyebrow: "No computer",
     h1: "Can I fix my Snapchat export on my phone?",
@@ -355,7 +466,7 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "Android" },
       {
         kind: "p",
-        text: "Much the same, with a different Files app. It has its own guide at /on-android.",
+        text: "Much the same, with a different Files app. It has [its own guide](/on-android).",
       },
     ],
     closer: {
@@ -369,6 +480,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "on-android",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "On Android",
     eyebrow: "No computer",
     h1: "Can I fix my Snapchat export on Android?",
@@ -386,13 +499,13 @@ export const ARTICLES: Article[] = [
           { lead: "3.", text: "Open keepmysnaps.com in Chrome, tap Choose file, and pick the ZIP from Downloads. If Snapchat sent several, select all of them." },
           { lead: "4.", text: "Keep the screen on and Chrome in front while it works." },
           { lead: "5.", text: "When it's done, keepmysnaps.zip lands in Downloads. Open it in your Files app and extract it." },
-          { lead: "6.", text: "To get them into Google Photos, turn on backup for that folder in Google Photos' backup settings." },
+          { lead: "6.", text: "To get them into [Google Photos](/snapchat-memories-to-google-photos), turn on backup for that folder in Google Photos' backup settings." },
         ],
       },
       { kind: "h", text: "Honestly, a laptop is better" },
       {
         kind: "p",
-        text: "Android handles this fine, but a laptop handles it better. A big export is several gigabytes the browser has to hold in memory while it works, and a laptop has far more room than a phone. It finishes sooner and doesn't pause the tab when the screen switches off. The phone is great for trying the free 20 files, or if it's all you have. If you do have a Windows PC, there's a guide for that too.",
+        text: "Android handles this fine, but a laptop handles it better. A big export is several gigabytes the browser has to hold in memory while it works, and a laptop has far more room than a phone. It finishes sooner and doesn't pause the tab when the screen switches off. The phone is great for trying the free 20 files, or if it's all you have. If you do have a Windows PC, [there's a guide for that too](/on-windows).",
       },
       { kind: "h", text: "The two things that go wrong" },
       {
@@ -425,6 +538,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapchat-plus-vs-exporting",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "Pay or export",
     eyebrow: "The decision",
     h1: "Pay Snapchat for storage, or export your memories?",
@@ -481,6 +596,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapeasy-alternative",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "vs SnapEasy",
     eyebrow: "Comparison",
     h1: "A cheaper alternative to SnapEasy",
@@ -527,7 +644,7 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "What neither of us can do" },
       {
         kind: "p",
-        text: "My Eyes Only memories are not in the export at all. They have to be taken out of the vault in the app before you request your data, or they simply won't be in the archive for anything to fix. SnapEasy documents this clearly and it applies here identically.",
+        text: "[My Eyes Only](/my-eyes-only-snapchat-export) snaps shouldn't be counted on to be in the export. Snapchat's instructions don't mention the vault, and SnapEasy tells people to move snaps out of it before requesting their data. The same advice applies here: move them back into Memories first.",
       },
       {
         kind: "p",
@@ -550,6 +667,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "fixmyexport-alternative",
+    published: "2026-08-26",
+    updated: "2026-09-13",
     crumb: "vs FixMyExport",
     eyebrow: "Comparison",
     h1: "A browser-based alternative to FixMyExport",
@@ -620,6 +739,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "stop-paying-snapchat-storage",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "Stop paying Snapchat",
     eyebrow: "Cancelling a storage plan",
     h1: "How to stop paying Snapchat for Memories storage without losing anything",
@@ -635,7 +756,7 @@ export const ARTICLES: Article[] = [
           { lead: "1. Request the export while the plan is still active.", text: "Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, and choose All Time. The JSON is where the dates and locations live; without it nothing can put them back." },
           { lead: "2. Download every part the day the email lands.", text: "A large library arrives as several ZIPs, only the first one carries the JSON, and the links expire within days." },
           { lead: "3. Put the dates, captions and locations back.", text: "The export strips all three. Copy the raw files into a photo library and every memory lands on the day you downloaded it." },
-          { lead: "4. Move them somewhere you trust.", text: "iCloud Photos, Google Photos, an external drive. The guides below cover the first two." },
+          { lead: "4. Move them somewhere you trust.", text: "[iCloud Photos](/snapchat-memories-to-icloud), [Google Photos](/snapchat-memories-to-google-photos), [Immich](/snapchat-memories-to-immich), [Synology Photos](/snapchat-memories-to-synology-photos), or an external drive." },
           { lead: "5. Check them, then cancel.", text: "Scroll by year, open a few videos, make sure the count looks right. Only then cancel the plan." },
         ],
       },
@@ -676,6 +797,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapchat-memories-to-icloud",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "To iCloud Photos",
     eyebrow: "Moving them",
     h1: "How to move Snapchat memories to iCloud Photos with the right dates",
@@ -732,6 +855,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapchat-memories-to-google-photos",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "To Google Photos",
     eyebrow: "Moving them",
     h1: "How to move Snapchat memories to Google Photos with the right dates",
@@ -781,6 +906,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "on-windows",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "On Windows",
     eyebrow: "Windows PC",
     h1: "How to fix a Snapchat export on a Windows PC",
@@ -818,12 +945,12 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "If the tab crashes on a big export" },
       {
         kind: "p",
-        text: "The archive is opened in the browser's memory, so a very large export on a PC without much RAM can crash the tab. Close other tabs and try again. If it still fails, run it in smaller batches, but every batch has to include part one, because only part one holds the JSON with your dates in it. Run part one with part two, then part one with part three, and so on. Part one's own memories come out again each time with the same names, so choose Skip when Windows asks about replacing files as you merge the folders.",
+        text: "The archive is opened in the browser's memory, so a very large export on a PC without much RAM can crash the tab. Close other tabs and try again. If it still fails, run it in smaller batches, but every batch has to include part one, because only [part one holds the JSON](/multiple-zip-files) with your dates in it. Run part one with part two, then part one with part three, and so on. Part one's own memories come out again each time with the same names, so choose Skip when Windows asks about replacing files as you merge the folders.",
       },
       { kind: "h", text: "Checking the dates in File Explorer" },
       {
         kind: "p",
-        text: "Open the KeepMySnaps folder, switch to Details view, right-click a column heading, choose More, and tick Date taken and Media created. Photos show their capture date under Date taken, and videos show theirs under Media created, the same fields photo apps read when you import them. If those columns look right here, they'll look right in iCloud, Google Photos or Immich.",
+        text: "Open the KeepMySnaps folder, switch to Details view, right-click a column heading, choose More, and tick Date taken and Media created. Photos show their capture date under Date taken, and videos show theirs under Media created, the same fields photo apps read when you import them. If those columns look right here, they'll look right in [iCloud](/snapchat-memories-to-icloud), [Google Photos](/snapchat-memories-to-google-photos) or [Immich](/snapchat-memories-to-immich).",
       },
     ],
     closer: {
@@ -837,6 +964,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapchat-memories-to-immich",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "To Immich",
     eyebrow: "Moving them",
     h1: "How to move Snapchat memories to Immich with the right dates",
@@ -895,6 +1024,8 @@ export const ARTICLES: Article[] = [
   /* ------------------------------------------------------------------ */
   {
     slug: "snapchat-memories-to-synology-photos",
+    published: "2026-09-13",
+    updated: "2026-09-13",
     crumb: "To Synology Photos",
     eyebrow: "Moving them",
     h1: "How to move Snapchat memories to Synology Photos with the right dates",

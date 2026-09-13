@@ -1,8 +1,10 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { ButtonLink, Eyebrow, Section } from "./ui";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import JsonLd from "./JsonLd";
-import { breadcrumbs } from "@/lib/jsonld";
+import { articleSchema, breadcrumbs } from "@/lib/jsonld";
 import type { Article as ArticleContent } from "@/content/articles";
 import SaveButton from "@/components/SaveButton";
 
@@ -18,9 +20,47 @@ const h2 =
   "text-[clamp(1.375rem,3vw,1.875rem)] font-extrabold leading-[1.15] tracking-[-0.025em] text-balance";
 const body = "text-[0.9375rem] leading-[1.7] text-muted-cool";
 
+/**
+ * Guide copy can carry internal links as `[label](/path)`. Only site-relative
+ * paths match, so a stray bracket in the text can never become an outbound
+ * link, and anything else renders exactly as written.
+ */
+const LINK = /\[([^\]]+)\]\((\/[^)\s]*)\)/g;
+
+function RichText({ text }: { text: string }) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(LINK)) {
+    const index = match.index ?? 0;
+    if (index > last) parts.push(text.slice(last, index));
+    parts.push(
+      <Link
+        key={index}
+        href={match[2]}
+        className="font-semibold text-ink underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink"
+      >
+        {match[1]}
+      </Link>,
+    );
+    last = index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+}
+
+function formatDate(isoDay: string) {
+  return new Date(`${isoDay}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export default function Article({ article }: { article: ArticleContent }) {
   return (
     <>
+      <JsonLd data={articleSchema(article)} />
       <JsonLd
         data={breadcrumbs([
           { name: "Home", path: "/" },
@@ -34,10 +74,14 @@ export default function Article({ article }: { article: ArticleContent }) {
           <h1 className="mt-4 max-w-[24ch] text-[clamp(1.75rem,4.2vw,2.75rem)] font-extrabold leading-[1.13] tracking-[-0.028em] text-balance">
             {article.h1}
           </h1>
+          <p className="mt-4 text-[0.8125rem] font-semibold text-muted">
+            Updated{" "}
+            <time dateTime={article.updated}>{formatDate(article.updated)}</time>
+          </p>
           {/* The lead answers the headline without needing the rest of the
               page, because this is the paragraph that gets quoted. */}
           <p className="mt-6 max-w-[62ch] text-[1.0625rem] leading-[1.65] text-ink">
-            {article.lead}
+            <RichText text={article.lead} />
           </p>
         </Section>
 
@@ -52,7 +96,9 @@ export default function Article({ article }: { article: ArticleContent }) {
           if (block.kind === "p") {
             return (
               <Section key={i} className="pb-5">
-                <p className={`max-w-[62ch] ${body}`}>{block.text}</p>
+                <p className={`max-w-[62ch] ${body}`}>
+                  <RichText text={block.text} />
+                </p>
               </Section>
             );
           }
@@ -60,8 +106,8 @@ export default function Article({ article }: { article: ArticleContent }) {
             return (
               <Section key={i} className="pb-5">
                 <ul className="flex max-w-[64ch] flex-col gap-3">
-                  {block.items.map((item) => (
-                    <li key={item.text} className="relative pl-5">
+                  {block.items.map((item, j) => (
+                    <li key={j} className="relative pl-5">
                       <span className="absolute left-0 top-[0.72em] h-px w-2.5 bg-muted-cool/60" />
                       <span className={body}>
                         {item.lead && (
@@ -69,7 +115,7 @@ export default function Article({ article }: { article: ArticleContent }) {
                             {item.lead}{" "}
                           </span>
                         )}
-                        {item.text}
+                        <RichText text={item.text} />
                       </span>
                     </li>
                   ))}
@@ -86,7 +132,9 @@ export default function Article({ article }: { article: ArticleContent }) {
                       <p className="text-[1rem] font-bold tracking-[-0.015em]">
                         {item.q}
                       </p>
-                      <p className={`mt-2 max-w-[62ch] ${body}`}>{item.a}</p>
+                      <p className={`mt-2 max-w-[62ch] ${body}`}>
+                        <RichText text={item.a} />
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -133,7 +181,9 @@ export default function Article({ article }: { article: ArticleContent }) {
         <Section className="pb-24 pt-10 sm:pb-32">
           <div className="max-w-[70ch] border-t border-hair pt-10">
             <h2 className={h2}>{article.closer.title}</h2>
-            <p className={`mt-5 max-w-[62ch] ${body}`}>{article.closer.text}</p>
+            <p className={`mt-5 max-w-[62ch] ${body}`}>
+              <RichText text={article.closer.text} />
+            </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <SaveButton className="w-full sm:w-auto" />
               <ButtonLink

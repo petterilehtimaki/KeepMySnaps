@@ -23,10 +23,10 @@ export const STAGES: Stage[] = [
       "Settings → Privacy Controls → My Data. Tick “Export your Memories” and “Export JSON Files”, choose All Time, submit. Your side is done and takes about two minutes.",
   },
   {
-    when: "A few hours to a couple of days",
+    when: "Hours, up to about a week",
     what: "Snapchat builds the archive",
     detail:
-      "Nothing happens that you can see, and there is no progress bar to check. Small accounts often land the same day. A library of several thousand memories usually takes longer, and everything takes longer when a lot of people ask at once.",
+      "Snapchat's own help page says it strives to deliver within 7 days, and that large downloads can take longer. Nothing happens that you can see, and there is no progress bar to check. Small accounts often land the same day. A library of several thousand memories usually takes longer, and everything takes longer when a lot of people ask at once.",
   },
   {
     when: "The email",

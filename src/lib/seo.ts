@@ -27,16 +27,20 @@ export const SITE_URL =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "http://localhost:4000");
 
-/** Every indexable route, in the order they should be crawled. */
+/**
+ * Every indexable route, in the order they should be crawled. `updated` is the
+ * YYYY-MM-DD the page's words last changed: bump it with a copy edit, not a
+ * deploy, or the sitemap's lastmod stops meaning anything.
+ */
 export const ROUTES = [
-  { path: "/", priority: 1 },
-  { path: "/how-it-works", priority: 0.9 },
-  { path: "/september-2026-deadline", priority: 0.9 },
-  { path: "/waiting-for-your-export", priority: 0.9 },
-  { path: "/faq", priority: 0.8 },
-  { path: "/contact", priority: 0.5 },
-  { path: "/privacy", priority: 0.3 },
-  { path: "/terms", priority: 0.3 },
+  { path: "/", priority: 1, updated: "2026-09-13" },
+  { path: "/how-it-works", priority: 0.9, updated: "2026-09-13" },
+  { path: "/september-2026-deadline", priority: 0.9, updated: "2026-09-13" },
+  { path: "/waiting-for-your-export", priority: 0.9, updated: "2026-09-13" },
+  { path: "/faq", priority: 0.8, updated: "2026-09-13" },
+  { path: "/contact", priority: 0.5, updated: "2026-09-13" },
+  { path: "/privacy", priority: 0.3, updated: "2026-09-13" },
+  { path: "/terms", priority: 0.3, updated: "2026-09-13" },
 ] as const;
 
 export const absoluteUrl = (path: string) =>
