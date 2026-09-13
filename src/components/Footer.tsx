@@ -3,7 +3,7 @@ import { ARTICLES } from "@/content/articles";
 
 const SITE = [
   { href: "/how-it-works", label: "How it works" },
-  { href: "/september-2026-deadline", label: "The deadline" },
+  { href: "/september-2026-deadline", label: "What's changing" },
   { href: "/waiting-for-your-export", label: "While you wait" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },

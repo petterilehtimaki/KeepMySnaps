@@ -1,10 +1,13 @@
 /**
- * The deletion timeline, as facts with dates attached.
+ * What Snapchat has actually said about Memories over 5GB, with dates.
  *
- * Everything here is written to survive Snapchat moving the date, which they
- * may well do: nothing promises anyone a specific hour their photos vanish,
- * because nothing has been promised. Where sources disagree — the download
- * link window in particular — the range is stated rather than a number picked.
+ * An earlier version of this file described 26 September 2026 as the date
+ * deletion could begin. Snapchat's support page contradicts that directly:
+ * "Will Snapchat delete my Memories if I do not upgrade? No." What it describes
+ * instead is archiving, from January 2027 at the earliest. Everything below is
+ * taken from help.snapchat.com, checked on 13 September 2026, and is written
+ * so that it stays true if Snapchat's schedule for any one account slips —
+ * nothing here promises anyone a specific day.
  */
 
 export type TimelineEntry = {
@@ -16,27 +19,27 @@ export type TimelineEntry = {
 export const TIMELINE: TimelineEntry[] = [
   {
     when: "26 September 2025",
-    what: "The 5GB limit arrives",
+    what: "The 5GB limit is announced",
     detail:
-      "Snapchat caps free Memories storage at 5GB and announces paid tiers above it. Nothing is deleted. Accounts already over the line are told their extra Memories will be kept temporarily.",
+      "Snapchat caps free Memories storage at 5GB and launches paid storage plans above it. Accounts already over the line are promised 12 months of temporary storage before anything changes.",
   },
   {
     when: "The 12 months after",
-    what: "The grace period",
+    what: "Temporary storage",
     detail:
-      "Everything over 5GB stays put, held in what Snapchat describes as temporary storage. This is the window we are in now, and it is the whole reason there is still time.",
+      "Everything over 5GB stays exactly where it is and fully usable. The end of this window, in late September 2026, is the date most countdowns point at — but it's when the grace period runs out, not when anything happens to your Memories.",
   },
   {
-    when: "26 September 2026",
-    what: "The earliest deletion can begin",
+    when: "January 2027, at the earliest",
+    what: "Archiving can begin",
     detail:
-      "Twelve months from the rollout. This is the first date on which Snapchat can start removing over-limit Memories — not a moment when everyone's photos disappear at once.",
+      "Memories that are more than a year old and aren't part of your oldest 5GB get archived. Snapchat says nothing is archived before January 2027, and that it will warn you in the app before anything changes on your account — so there is no single day everyone's library flips.",
   },
   {
-    when: "After that",
-    what: "Rolling, per account",
+    when: "Once archived",
+    what: "Thumbnails, not files",
     detail:
-      "Snapchat has not published a schedule. Deletion is expected to work through accounts rather than land on all of them simultaneously, which means your own date could be that week or considerably later. It also means nobody can tell you which.",
+      "Archived Memories stay on Snapchat and still show up in the app, but only as thumbnails. Opening, editing or sharing one needs a paid storage plan. They aren't deleted: Snapchat's answer to whether it deletes Memories if you don't upgrade is one word, and the word is no.",
   },
 ];
 
@@ -50,22 +53,22 @@ export type Option = {
 export const OPTIONS: Option[] = [
   {
     name: "Pay Snapchat",
-    cost: "$1.99/month for 100GB",
-    gets: "Everything stays exactly where it is. No files to move, no export to wait for.",
+    cost: "$1.99/month or $20/year for 100GB",
+    gets: "Everything stays openable exactly where it is, in the app, resurfacing the way it always has. No files to move, no export to wait for.",
     catch:
-      "It is rent, not ownership — $24 a year, forever, and your photos stay somewhere you don't control. Snapchat+ at $3.99/month includes 250GB and Platinum at $15.99/month includes 5TB, so check what you're already paying for before adding a plan.",
+      "It is rent, not ownership — for as long as you want to see them, and the terms are Snapchat's to change. Snapchat+ includes 250GB and Platinum includes 5TB, so check what you're already paying for before adding a plan.",
   },
   {
-    name: "Delete down to 5GB",
+    name: "Do nothing",
     cost: "Free",
-    gets: "You stay under the cap and nothing gets removed for you.",
+    gets: "Nothing is deleted. Everything from the last year, and your oldest 5GB, stays fully usable.",
     catch:
-      "You choose what goes instead of an algorithm choosing for you, which is better, but you are still choosing what goes.",
+      "Everything in between becomes a thumbnail from January 2027 — still there, but locked until you pay. For most long-time users, the in-between is most of the library.",
   },
   {
     name: "Export and keep them",
     cost: "Free from Snapchat",
-    gets: "The files are yours, on your machine, in a folder nobody can bill you for.",
+    gets: "The full-quality files are yours, on your machine, in a folder nobody can lock or bill you for.",
     catch:
       "The archive takes days to arrive and lands with the capture dates, GPS and captions stripped out. That last part is the problem this site exists to fix.",
   },

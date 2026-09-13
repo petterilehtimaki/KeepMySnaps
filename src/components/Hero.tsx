@@ -92,17 +92,13 @@ export default function Hero() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.22em] text-muted">
-            Snapchat can start deleting memories in
-          </p>
-
-          <div className="mt-8 sm:mt-10">
-            <Countdown />
-          </div>
+          {/* The line above the numbers lives inside Countdown so the two flip
+              together when the date passes instead of one of them going stale. */}
+          <Countdown withEyebrow />
 
           <h1 className="mx-auto mt-14 max-w-[26ch] text-[clamp(1.75rem,4.6vw,2.75rem)] font-extrabold leading-[1.12] tracking-[-0.028em] text-balance sm:mt-16">
-            Save your <span className="snap-mark">Snapchat</span> memories
-            before they&rsquo;re gone
+            Keep your <span className="snap-mark">Snapchat</span> memories
+            without paying to open them
           </h1>
 
           <p className="mx-auto mt-6 max-w-[46ch] text-[1.0625rem] leading-[1.6] text-muted-cool text-pretty">

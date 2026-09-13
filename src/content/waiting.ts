@@ -26,7 +26,7 @@ export const STAGES: Stage[] = [
     when: "A few hours to a couple of days",
     what: "Snapchat builds the archive",
     detail:
-      "Nothing happens that you can see, and there is no progress bar to check. Small accounts often land the same day. A library of several thousand memories usually takes longer, and everything takes longer the closer this gets to the deadline, because everyone is asking at once.",
+      "Nothing happens that you can see, and there is no progress bar to check. Small accounts often land the same day. A library of several thousand memories usually takes longer, and everything takes longer when a lot of people ask at once.",
   },
   {
     when: "The email",

@@ -38,9 +38,11 @@ Anything still unmatched is reported in the summary rather than dropped.
 look bare. Each overlay is composited onto its base photo on a canvas and the
 result is re-encoded as JPEG.
 
-**Videos** pass through untouched. MP4 has nowhere to put EXIF, so the capture
-date is carried by the output filename and the ZIP entry's timestamp, which is
-what the filesystem picks up on extract.
+**Videos** have no EXIF, so the capture time is written into the MP4's own
+mvhd, tkhd and mdhd headers — what photo apps read for a video's date — and
+into the filename. A video with a caption is decoded, has the overlay drawn onto
+every frame and is re-encoded in the tab (`src/lib/video.ts`); mp4-muxer stamps
+its output with the current time, so `src/lib/mp4time.ts` puts the real one back.
 
 Output is one ZIP containing the fixed media, a `keepmysnaps-index.csv` of
 every date and coordinate, and a README.
@@ -82,12 +84,18 @@ sets `connect-src 'self'` so it can't.
 
 ## Deadline
 
-The countdown reads from `DEADLINE` in `src/lib/config.ts`, currently
-26 September 2026 at 00:00 UTC — the end of the 12-month grace period that
-began when the policy rolled out on 26 September 2025. That is the earliest
-date deletion can start, not a universal cut-off: the rollout is per-account
-from then on, which is why the copy says "can start deleting" rather than
-naming the hour someone's photos disappear. Change it there if Snapchat moves.
+The countdown reads from `DEADLINE` in `src/lib/config.ts`: 1 January 2027 at
+00:00 UTC, the earliest date Snapchat says it will start *archiving* Memories
+over 5GB. Not deleting — Snapchat's support page answers that one with a flat
+no. Archived Memories stay in the app as thumbnails that need a paid plan to
+open, and Snapchat says each account gets notice in the app first, so this is
+the earliest moment rather than a date anyone's library is promised to change.
+
+This used to count down to 26 September 2026 and call it the start of
+deletion. That is only the end of the 12-month temporary storage window, and
+the copy everywhere was corrected on 13 September 2026 against Snapchat's own
+page. After the date passes, `Countdown` switches to days elapsed rather than
+freezing at zero.
 
 ## Notes
 

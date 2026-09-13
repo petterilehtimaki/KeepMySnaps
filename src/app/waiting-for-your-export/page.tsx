@@ -9,7 +9,7 @@ import { OG_IMAGE, TWITTER_CARD } from "@/lib/seo";
 
 const TITLE = "How long does a Snapchat export take? — KeepMySnaps";
 const DESCRIPTION =
-  "Anywhere from a few hours to a couple of days, and longer the closer it gets to the deadline. What happens while you wait, when the link expires, and what will be wrong with the archive when it finally lands.";
+  "Anywhere from a few hours to a couple of days, and longer when a lot of people ask at once. What happens while you wait, when the link expires, and what will be wrong with the archive when it finally lands.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -56,11 +56,12 @@ export default function WaitingPage() {
           <p className="mt-6 max-w-[62ch] text-[1.0625rem] leading-[1.65] text-ink">
             Usually <strong>a few hours to a couple of days</strong>. Small
             accounts often get the email the same day; a library of several
-            thousand memories takes longer, and everything slows down as the
-            September deadline approaches and millions of people ask at once.
+            thousand memories takes longer, and everything slows down when a lot
+            of people ask at once — which, with a September date going round, is
+            about now.
             Snapchat publishes no estimate and shows no progress, so there is
             nothing to refresh. This is the part nobody can hurry, which is the
-            whole argument for requesting it now rather than in the last week.
+            whole argument for requesting it now rather than when you need it.
           </p>
         </Section>
 
@@ -125,7 +126,7 @@ export default function WaitingPage() {
                 variant="outline"
                 className="w-full sm:w-auto"
               >
-                How long you&rsquo;ve got
+                What&rsquo;s actually changing
               </ButtonLink>
             </div>
           </div>

@@ -139,7 +139,7 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "What correct looks like afterwards" },
       {
         kind: "p",
-        text: "Photos land on the day they happened, in order, spread across every year you used the app. Videos can't hold EXIF — an MP4 has nowhere to put it — so their dates ride on the filename and the file's own timestamp, which is what your filesystem picks up on extract and what most photo apps then read on import.",
+        text: "Photos land on the day they happened, in order, spread across every year you used the app. Videos have no EXIF, but an MP4 keeps a creation time in its own header, and that is what Apple Photos, iCloud and Google Photos read to place a video. That field gets the real capture time too, along with the filename.",
       },
     ],
     closer: FIX_IT,
@@ -256,15 +256,15 @@ export const ARTICLES: Article[] = [
           { lead: "Check spam before you assume.", text: "It's a bulk email with a big download link in it, which is precisely what filters are built to catch." },
         ],
       },
-      { kind: "h", text: "Don't wait for the deadline to try again" },
+      { kind: "h", text: "Don't wait to try again" },
       {
         kind: "p",
-        text: "Requests slow down as more people make them, and the closer this gets to late September the longer the queue. Re-requesting in early September and re-requesting on the 24th are not the same gamble.",
+        text: "Requests slow down when a lot of people make them at once, and plenty of people currently believe there's a deadline in late September. Re-requesting in a quiet week and re-requesting in a panic are not the same gamble.",
       },
-      { kind: "h", text: "What if the files are already deleted?" },
+      { kind: "h", text: "Are my Memories gone?" },
       {
         kind: "p",
-        text: "An expired link doesn't mean your Memories are gone — it only means the archive Snapchat built for you was cleaned up. Everything still in your account can be exported again. What can't be recovered is anything Snapchat has already removed under the storage limit, which is why the request is worth making now rather than after the deadline.",
+        text: "No. An expired link only means the archive Snapchat built for you was cleaned up; your Memories are still in your account and can be exported again. Snapchat has said it won't delete Memories over the storage limit — from January 2027 it archives them instead, as thumbnails that need a paid plan to open — so a fresh export gets you the full-quality files either way.",
       },
     ],
     closer: {
@@ -377,10 +377,10 @@ export const ARTICLES: Article[] = [
         a: "Pay Snapchat",
         b: "Export",
         rows: [
-          { label: "Cost", a: "$1.99/month for 100GB, ongoing. Snapchat+ at $3.99 includes 250GB; Platinum at $15.99 includes 5TB.", b: "Free from Snapchat. This site is $5 once if you want the metadata put back." },
+          { label: "Cost", a: "$1.99/month or $20/year for 100GB, ongoing. Snapchat+ includes 250GB; Platinum includes 5TB.", b: "Free from Snapchat. This site is $5 once if you want the metadata put back." },
           { label: "Effort", a: "None. Nothing moves.", b: "A day or two of waiting, then an hour of work." },
           { label: "Where they live", a: "In Snapchat, browsable in the app, resurfacing as On This Day.", b: "Wherever you put them. Photos, Drive, an external drive in a drawer." },
-          { label: "If you stop paying", a: "You're back over the limit and the clock restarts.", b: "Nothing happens. They're your files." },
+          { label: "If you stop paying", a: "Memories over 5GB that are more than a year old get archived from January 2027 — still there, but thumbnails until you pay again.", b: "Nothing happens. They're your files." },
           { label: "If Snapchat changes the rules", a: "You find out when they tell you.", b: "Doesn't affect you." },
           { label: "Quality", a: "Originals, untouched.", b: "Originals for photos. Videos are re-encoded if they carry a caption." },
         ],
@@ -392,7 +392,7 @@ export const ARTICLES: Article[] = [
       },
       {
         kind: "p",
-        text: "It's also the right call if you're over the limit and the deadline is close. Paying takes thirty seconds; an export takes days. If you're reading this in late September, pay first and export afterwards at your own pace.",
+        text: "It's also the easy call if you're short on time. Paying takes thirty seconds; an export takes days. Nothing is deleted either way, so paying for a month and exporting at your own pace costs about two dollars.",
       },
       { kind: "h", text: "When exporting is the right call" },
       {
@@ -401,19 +401,19 @@ export const ARTICLES: Article[] = [
       },
       {
         kind: "p",
-        text: "There's a middle path nobody mentions: pay for one month, export everything at your leisure while nothing is at risk of deletion, then cancel. About two dollars to remove all the time pressure.",
+        text: "There's a middle path nobody mentions: pay for one month, export everything while it's all still openable, then cancel. About two dollars to remove the time pressure entirely.",
       },
       { kind: "h", text: "Doing nothing" },
       {
         kind: "p",
-        text: "Also a choice, and fine if your Memories fit inside the free 5GB — the cap only bites above the line. If you're over it, the excess is what goes, and Snapchat has said it goes rather than being archived.",
+        text: "Also a choice, and fine if your Memories fit inside the free 5GB — the cap only bites above the line. If you're over it, nothing is deleted: from January 2027, Memories more than a year old that fall outside your oldest 5GB are archived, which means they stay in the app as thumbnails you'd have to pay to open, edit or share. Export them before then and the full files are yours regardless.",
       },
     ],
     closer: {
       title: "If you're exporting",
       text: "The archive arrives with the dates, locations and captions stripped out — that's normal, and it's what this site puts back, in your browser, without uploading anything. The first 20 files are free.",
       href: "/september-2026-deadline",
-      label: "How long you've got",
+      label: "What's actually changing",
     },
   },
 
@@ -527,7 +527,7 @@ export const ARTICLES: Article[] = [
       {
         kind: "ul",
         items: [
-          { lead: "You don't have a computer.", text: "This is the big one. FixMyExport is desktop only, and a large share of the people facing this deadline have a phone and nothing else. This runs in mobile Safari." },
+          { lead: "You don't have a computer.", text: "This is the big one. FixMyExport is desktop only, and a large share of the people doing this have a phone and nothing else. This runs in mobile Safari." },
           { lead: "You don't want to install anything.", text: "Some people won't download an executable to handle their entire photo history, and that's a reasonable instinct rather than paranoia." },
           { lead: "You're over 200 files and counting the cost.", text: "$5 against $14.99 for the same job." },
           { lead: "You use more than one machine.", text: "Their Pro licence covers one device. A web page has no such concept." },
@@ -553,6 +553,167 @@ export const ARTICLES: Article[] = [
       text: "If you're under 200 files, use theirs — it's free at that size. If you're over it, or you're doing this on a phone, drop your export here and get the first 20 back before anyone asks you for money.",
       href: "/on-iphone",
       label: "Doing it on a phone",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "stop-paying-snapchat-storage",
+    crumb: "Stop paying Snapchat",
+    eyebrow: "Cancelling a storage plan",
+    h1: "How to stop paying Snapchat for Memories storage without losing anything",
+    title: "Cancel Snapchat Memories storage without losing your memories — KeepMySnaps",
+    description:
+      "Export first, then cancel. What happens to Memories over 5GB when you stop paying, what Snapchat says it won't do, and the order that loses nothing.",
+    lead: "Export first, then cancel — in that order. Cancelling a storage plan while you're over 5GB doesn't delete anything, but from January 2027 Snapchat archives Memories that are more than a year old and aren't part of your oldest 5GB: they stay in the app as thumbnails that need a paid plan to open. Take a full export while every one of them is still openable, and cancelling costs you nothing but the thumbnails.",
+    blocks: [
+      { kind: "h", text: "The order that loses nothing" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1. Request the export while the plan is still active.", text: "Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, and choose All Time. The JSON is where the dates and locations live; without it nothing can put them back." },
+          { lead: "2. Download every part the day the email lands.", text: "A large library arrives as several ZIPs, only the first one carries the JSON, and the links expire within days." },
+          { lead: "3. Put the dates, captions and locations back.", text: "The export strips all three. Copy the raw files into a photo library and every memory lands on the day you downloaded it." },
+          { lead: "4. Move them somewhere you trust.", text: "iCloud Photos, Google Photos, an external drive — the guides below cover the first two." },
+          { lead: "5. Check them, then cancel.", text: "Scroll by year, open a few videos, make sure the count looks right. Only then cancel the plan." },
+        ],
+      },
+      { kind: "h", text: "Where the cancel button is" },
+      {
+        kind: "p",
+        text: "Snapchat's support page says a Memories-only storage plan is managed from your Memories settings in the app. If your storage comes with Snapchat+ or Platinum, it's a subscription like any other — cancel it wherever you started it: the App Store, Google Play, or Snapchat's website.",
+      },
+      { kind: "h", text: "What happens after you cancel" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "Under 5GB:", text: "nothing changes." },
+          { lead: "Over 5GB:", text: "nothing is deleted. Snapchat's support page answers that question with a flat no." },
+          { lead: "From January 2027:", text: "Memories more than a year old that aren't in your oldest 5GB get archived. You still see them, as thumbnails, but opening, editing or sharing one needs a paid plan again." },
+          { lead: "Before it happens to you:", text: "Snapchat says it will give notice in the app first, so there's no single day everyone's library changes." },
+        ],
+      },
+      { kind: "h", text: "Is the plan worth keeping?" },
+      {
+        kind: "p",
+        text: "$1.99 a month or $20 a year for 100GB is small, and it's forever. If you open old Memories constantly, send throwbacks to friends, or live in On This Day, keep it — an export doesn't do any of that. If you mostly want them kept safe and rarely look, one export is cheaper than every year after it.",
+      },
+      { kind: "h", text: "Don't delete anything from Snapchat yet" },
+      {
+        kind: "p",
+        text: "There's no reason to. Cancelling doesn't require clearing your Memories, and until you've opened the exported copy and checked it, the copy in the app is the only one you know is complete.",
+      },
+    ],
+    closer: {
+      title: "Do the export part properly",
+      text: "This puts the dates, captions and locations back into your export in your browser, with nothing uploaded. The first 20 files are free, so you can check the result before cancelling anything.",
+      href: "/snapchat-memories-to-icloud",
+      label: "Moving them to iCloud",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-to-icloud",
+    crumb: "To iCloud Photos",
+    eyebrow: "Moving them",
+    h1: "How to move Snapchat memories to iCloud Photos with the right dates",
+    title: "Move Snapchat memories to iCloud Photos with correct dates — KeepMySnaps",
+    description:
+      "Import Snapchat's export straight into iCloud and everything lands on today's date. Here's why, and the order that puts every photo and video on the day it happened.",
+    lead: "Export from Snapchat, fix the dates, then import into Photos — in that order. Import the raw export and every memory lands on the day you downloaded it, because Snapchat's files arrive with no EXIF date. Photos reads the date from inside each file — EXIF for photos, the QuickTime creation date for videos — so that's where the real capture time has to be before anything goes in.",
+    blocks: [
+      { kind: "h", text: "On a Mac" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "Request your export with Export your Memories and Export JSON Files ticked, and download every part." },
+          { lead: "2.", text: "Drop all the ZIPs onto this site at once and download the finished one." },
+          { lead: "3.", text: "Double-click it to unzip." },
+          { lead: "4.", text: "In Photos, File → Import, and choose the folder." },
+          { lead: "5.", text: "With iCloud Photos switched on, they sync to every device from there." },
+        ],
+      },
+      { kind: "h", text: "On an iPhone, with no computer" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "Send Snapchat's download to the Files app rather than opening it." },
+          { lead: "2.", text: "Open this site in Safari and choose the ZIP from Files. Keep the screen on until it finishes." },
+          { lead: "3.", text: "Save the finished ZIP to Files, then tap it — Files unzips it into a folder." },
+          { lead: "4.", text: "Open the folder, tap Select, select everything, then Share and save them to Photos." },
+        ],
+      },
+      { kind: "h", text: "What Photos uses for the date" },
+      {
+        kind: "p",
+        text: "For a photo, the EXIF DateTimeOriginal field. For a video, the creation date stored inside the movie file, and only if that's missing does it fall back to the file's own date. Snapchat's photos have no EXIF at all and its videos' internal dates aren't always right, so both are written on the way out — the date in the photo's EXIF and the date in the video's header come from the same entry in Snapchat's own list.",
+      },
+      { kind: "h", text: "Some will have no location, and that's deliberate" },
+      {
+        kind: "p",
+        text: "Snapchat's export doesn't say which photo each coordinate belongs to, so when several memories share a day and were taken in different places, the location is left empty rather than guessed. A wrong pin on the map looks exactly like a right one. The index CSV in the ZIP marks every location exact, approximate or blank.",
+      },
+      { kind: "h", text: "Check before you delete anything" },
+      {
+        kind: "p",
+        text: "Once they're in, scroll the Library by year, open a few videos, and look at the count. Snapchat's export sometimes lists more memories than it actually ships — in one real export about 4% had no file — so compare against what you expected before clearing anything anywhere.",
+      },
+    ],
+    closer: {
+      title: "Fix them before they go in",
+      text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free.",
+      href: "/snapchat-memories-to-google-photos",
+      label: "Or Google Photos",
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-to-google-photos",
+    crumb: "To Google Photos",
+    eyebrow: "Moving them",
+    h1: "How to move Snapchat memories to Google Photos with the right dates",
+    title: "Move Snapchat memories to Google Photos with correct dates — KeepMySnaps",
+    description:
+      "Upload Snapchat's raw export and Google Photos files it all under the day you uploaded it. Fix the dates first, then upload — and check the videos.",
+    lead: "Fix the dates first, then upload. Google Photos files a photo under the date stored inside it, and Snapchat's export ships photos with none — so an unfixed upload puts years of memories on the day you uploaded them. Once the capture date is written into each file, they sort into the years they came from.",
+    blocks: [
+      { kind: "h", text: "From a computer" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "Export from Snapchat with Export JSON Files ticked, download every part, and run them all through this site together." },
+          { lead: "2.", text: "Unzip the result." },
+          { lead: "3.", text: "Open photos.google.com and drag the folder into the window, or use Upload." },
+        ],
+      },
+      { kind: "h", text: "From a phone" },
+      {
+        kind: "p",
+        text: "The Google Photos app backs up whatever is in your phone's photo library. So fix the export in your browser, save the finished files into your photo library, and let backup pick them up. On Android you can also point backup at the folder you unzipped them into.",
+      },
+      { kind: "h", text: "Videos are the part to check" },
+      {
+        kind: "p",
+        text: "Google documents how it dates photos more clearly than videos. The fixed videos carry the capture time in the movie's own header — the field photo apps generally read — and in the filename, so they should land on the right day. But since Google doesn't spell out its fallback, open a handful of videos after uploading and check before deleting anything.",
+      },
+      { kind: "h", text: "Storage" },
+      {
+        kind: "p",
+        text: "A free Google account's 15GB is shared between Gmail, Drive and Photos. Anyone who was over Snapchat's 5GB limit has a decent chance of running out here too, so check your space before starting an upload that stops halfway.",
+      },
+      { kind: "h", text: "Locations" },
+      {
+        kind: "p",
+        text: "Some memories will have no location, on purpose. Snapchat's export doesn't say which photo a coordinate belongs to, so where a day's memories were scattered the field is left empty instead of guessed. The CSV in the ZIP shows which are exact, approximate or blank.",
+      },
+    ],
+    closer: {
+      title: "Fix them before they go up",
+      text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free.",
+      href: "/stop-paying-snapchat-storage",
+      label: "Cancelling Snapchat's plan",
     },
   },
 ];

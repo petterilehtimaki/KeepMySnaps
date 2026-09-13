@@ -319,7 +319,7 @@ function Result({
         </p>
         <p className="mx-auto mt-2 max-w-[46ch] text-[0.875rem] leading-[1.6] text-muted-cool">
           {summary.videos > 0
-            ? `Including ${summary.videos} ${summary.videos === 1 ? "video" : "videos"}. Their dates ride on the filename and file timestamp rather than EXIF, which is the only place an MP4 has to keep one.`
+            ? `Including ${summary.videos} ${summary.videos === 1 ? "video" : "videos"}. Each one carries its capture time inside the file, which is where photo apps look for a video's date.`
             : "Every photo now carries its real capture date and location."}
         </p>
         {summary.videoCaptionsBurned > 0 && (
