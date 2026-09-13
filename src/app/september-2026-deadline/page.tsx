@@ -93,8 +93,8 @@ export default function DeadlinePage() {
           <h2 className={h2}>What Snapchat actually said</h2>
           <div className="mt-8 flex max-w-[64ch] flex-col gap-4">
             <p className={quote}>
-              &ldquo;Will Snapchat delete my Memories if I do not upgrade?
-              No.&rdquo;
+              &ldquo;No. Snapchat will not automatically delete your Memories
+              because you do not upgrade.&rdquo;
             </p>
             <p className={quote}>
               &ldquo;No Memories will be archived before January 2027, and we

@@ -3,7 +3,7 @@
  *
  * An earlier version of this file described 26 September 2026 as the date
  * deletion could begin. Snapchat's support page contradicts that directly:
- * "Will Snapchat delete my Memories if I do not upgrade? No." What it describes
+ * "No. Snapchat will not automatically delete your Memories because you do not upgrade." What it describes
  * instead is archiving, from January 2027 at the earliest. Everything below is
  * taken from help.snapchat.com, checked on 13 September 2026, and is written
  * so that it stays true if Snapchat's schedule for any one account slips —
@@ -39,7 +39,7 @@ export const TIMELINE: TimelineEntry[] = [
     when: "Once archived",
     what: "Thumbnails, not files",
     detail:
-      "Archived Memories stay on Snapchat and still show up in the app, but only as thumbnails. Opening, editing or sharing one needs a paid storage plan. They aren't deleted: Snapchat's answer to whether it deletes Memories if you don't upgrade is one word, and the word is no.",
+      "Archived Memories stay on Snapchat and still show up in the app, but only as thumbnails. Opening, editing or sharing one needs a paid storage plan. They aren't deleted: asked whether it deletes Memories if you don't upgrade, Snapchat's support page says \"No. Snapchat will not automatically delete your Memories because you do not upgrade.\"",
   },
 ];
 
