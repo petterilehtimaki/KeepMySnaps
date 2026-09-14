@@ -7,7 +7,7 @@ import ContactForm from "./ContactForm";
 /**
  * The contact form, parked in the bottom-right corner of every page.
  *
- * A native <dialog> for the same reasons as SaveButton: showModal() puts it in
+ * A native <dialog> for the same reasons as SaveChoice: showModal() puts it in
  * the top layer, traps focus and handles Escape. On a phone it opens as a sheet
  * from the bottom edge; from `sm` up it opens as a panel in the same corner as
  * the button, over a light backdrop, so the page stays readable behind it.
