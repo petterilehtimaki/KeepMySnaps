@@ -11,6 +11,7 @@ import {
 import { FREE_FILE_LIMIT, PRICE_LABEL } from "@/lib/config";
 import { startCheckout, useUnlock } from "./useUnlock";
 import { Button, Eyebrow, Section } from "./ui";
+import SaveChoice, { hasStoredUnlock, scrollToChooseFile } from "./SaveChoice";
 
 type State =
   | { kind: "idle" }
@@ -24,6 +25,7 @@ export default function Uploader() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const choiceRef = useRef<HTMLDialogElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const urlRef = useRef<string | null>(null);
 
@@ -55,14 +57,14 @@ export default function Uploader() {
     [],
   );
 
-  // Arriving at /#upload from another page — "Test first" in the save prompt,
-  // or coming back from Stripe — lands at the top: a client-side navigation
+  // Arriving at /#upload from another page, from a "Save my memories" button
+  // or coming back from Stripe, lands at the top: a client-side navigation
   // resets scroll before this section exists to be scrolled to. So once it
   // does exist, go to it.
   useEffect(() => {
     if (window.location.hash !== "#upload") return;
     const id = window.setTimeout(() => {
-      document.getElementById("upload")?.scrollIntoView({ behavior: "smooth" });
+      scrollToChooseFile();
     }, 60);
     return () => window.clearTimeout(id);
   }, []);
@@ -174,6 +176,10 @@ export default function Uploader() {
 
   return (
     <Section id="upload" className="pb-24 sm:pb-32">
+      <SaveChoice
+        dialogRef={choiceRef}
+        onTestFirst={() => inputRef.current?.click()}
+      />
       <Eyebrow>Your export</Eyebrow>
       <h2 className="mt-4 max-w-[24ch] text-[clamp(1.5rem,3.2vw,2.125rem)] font-extrabold leading-[1.15] tracking-[-0.025em] text-balance">
         Drop the ZIP Snapchat sent you
@@ -186,6 +192,7 @@ export default function Uploader() {
       <div className="mt-10">
         {state.kind === "idle" || state.kind === "error" ? (
           <div
+            id="choose-file"
             onDragOver={(e) => {
               e.preventDefault();
               setDragging(true);
@@ -221,7 +228,12 @@ export default function Uploader() {
 
             <Button
               className="mt-7"
-              onClick={() => inputRef.current?.click()}
+              onClick={() => {
+                // Paid visitors go straight to the file picker. Everyone else
+                // is asked whether to test on the free 20 or pay first.
+                if (unlocked || hasStoredUnlock()) inputRef.current?.click();
+                else choiceRef.current?.showModal();
+              }}
               type="button"
             >
               Choose file
