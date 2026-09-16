@@ -439,7 +439,7 @@ export const ARTICLES: Article[] = [
           { lead: "1.", text: "In Snapchat: Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, choose All Time, submit." },
           { lead: "2.", text: "When the email lands, tap the link. Safari will offer to download it. Send it to Files rather than opening it." },
           { lead: "3.", text: "In Files, find the ZIP under Downloads. Don't unzip it." },
-          { lead: "4.", text: "Open keepmysnaps.com in Safari, tap the upload area, choose Browse, and pick the ZIP from Files." },
+          { lead: "4.", text: "Open www.keepmysnaps.com in Safari, tap the upload area, choose Browse, and pick the ZIP from Files." },
           { lead: "5.", text: "Leave the screen on and the tab in front while it works." },
           { lead: "6.", text: "Save the finished ZIP back to Files, then unzip it there and share the photos into your camera roll." },
         ],
@@ -496,7 +496,7 @@ export const ARTICLES: Article[] = [
         items: [
           { lead: "1.", text: "In Snapchat: Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, choose All Time, submit." },
           { lead: "2.", text: "When the email lands, open the link in Chrome and download every part. They go to your Downloads folder. Don't unzip them." },
-          { lead: "3.", text: "Open keepmysnaps.com in Chrome, tap Choose file, and pick the ZIP from Downloads. If Snapchat sent several, select all of them." },
+          { lead: "3.", text: "Open www.keepmysnaps.com in Chrome, tap Choose file, and pick the ZIP from Downloads. If Snapchat sent several, select all of them." },
           { lead: "4.", text: "Keep the screen on and Chrome in front while it works." },
           { lead: "5.", text: "When it's done, keepmysnaps.zip lands in Downloads. Open it in your Files app and extract it." },
           { lead: "6.", text: "To get them into [Google Photos](/snapchat-memories-to-google-photos), turn on backup for that folder in Google Photos' backup settings." },
@@ -922,7 +922,7 @@ export const ARTICLES: Article[] = [
         items: [
           { lead: "1.", text: "In Snapchat: Settings → Privacy Controls → My Data. Tick Export your Memories and Export JSON Files, choose All Time, submit." },
           { lead: "2.", text: "When the email arrives, download every part into your Downloads folder. Leave them as ZIPs." },
-          { lead: "3.", text: "Open keepmysnaps.com in Chrome or Edge, click Choose file, and select every ZIP at once: click the first, then Shift-click the last. Dragging them all onto the page works too." },
+          { lead: "3.", text: "Open www.keepmysnaps.com in Chrome or Edge, click Choose file, and select every ZIP at once: click the first, then Shift-click the last. Dragging them all onto the page works too." },
           { lead: "4.", text: "Leave the tab in front and the PC awake while it works." },
           { lead: "5.", text: "Save keepmysnaps.zip when it's done, right-click it and choose Extract All. You get a KeepMySnaps folder." },
         ],

@@ -16,16 +16,16 @@ export const OG_IMAGE = {
 export const TWITTER_CARD = "summary_large_image" as const;
 
 /**
- * Crawlers won't resolve a relative og:image, and robots.txt has to name the
- * sitemap by absolute URL, so this has to be resolvable outside a request.
- * Vercel injects VERCEL_PROJECT_PRODUCTION_URL on every deployment; set
- * NEXT_PUBLIC_SITE_URL to override it with a custom domain.
+ * The one canonical origin. Every canonical, og:url, JSON-LD id, sitemap entry
+ * and the robots.txt Sitemap line is built from this, so it is pinned here
+ * rather than read from the environment or the request: a preview deployment,
+ * localhost, or a request that arrived on the bare domain must still point
+ * crawlers at www. The bare domain and http:// both 308 to this host at Vercel.
+ *
+ * Crawlers won't resolve a relative og:image and robots.txt has to name the
+ * sitemap by absolute URL, which is why this is absolute.
  */
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:4000");
+export const SITE_URL = "https://www.keepmysnaps.com";
 
 /**
  * Every indexable route, in the order they should be crawled. `updated` is the
