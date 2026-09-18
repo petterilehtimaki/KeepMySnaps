@@ -3,12 +3,15 @@
  * browser. Everything runs sequentially so a 5GB export doesn't try to hold
  * itself in memory all at once.
  */
-import JSZip from "jszip";
 import {
   BlobReader,
+  BlobWriter,
+  TextReader,
   TextWriter,
+  Uint8ArrayReader,
   Uint8ArrayWriter,
   ZipReader,
+  ZipWriter,
   configure,
 } from "@zip.js/zip.js";
 import {
@@ -304,11 +307,39 @@ export async function processExport(
   const selected =
     limit === null ? pairings : freeSelection(entries, pairings, limit);
 
-  const out = new JSZip();
-  const folder = out.folder("KeepMySnaps")!;
+  // The archive is written as the work happens, not assembled at the end.
+  //
+  // JSZip can read zip64 but not write it, so anything past 4GB or 65,535
+  // files came out malformed: exactly the libraries this tool exists for. This
+  // writer does zip64, and streams into the browser's own storage so nothing
+  // is held in memory. `level: 0` is store, since photos and video are already
+  // compressed and deflating them again costs minutes to save nothing.
+  const sink = await openOutputSink();
+  // zip64 only where it is needed. Past 4GB or 65,535 files a plain ZIP cannot
+  // describe itself and comes out malformed, which is the case this tool has
+  // to survive; below that, a plain ZIP is what every unarchiver on earth
+  // opens without thinking about it.
+  const inputBytes = files.reduce((total, f) => total + f.size, 0);
+  const out = new ZipWriter(sink.writable, {
+    zip64: inputBytes > 3_000_000_000 || mediaFiles.length > 60_000,
+    level: 0,
+  });
+  const folder = {
+    file: (
+      name: string,
+      data: Uint8Array | string,
+      opts?: { date?: Date },
+    ) =>
+      out.add(
+        `KeepMySnaps/${name}`,
+        typeof data === "string"
+          ? new TextReader(data)
+          : new Uint8ArrayReader(data),
+        { lastModDate: opts?.date },
+      ),
+  };
   const used = new Set<string>();
   const usedCaptions = new Set<string>();
-  let captions: JSZip | null = null;
   const csv: string[] = [
     "filename,taken_at_utc,latitude,longitude,location_precision,source_file",
   ];
@@ -417,12 +448,11 @@ export async function processExport(
           outExt = "mp4";
           summary.videoCaptionsBurned++;
         } else {
-          captions ??= folder.folder("captions")!;
-          captions.file(
-            outputName(entry, "png", i, usedCaptions).replace(
+          await folder.file(
+            `captions/${outputName(entry, "png", i, usedCaptions).replace(
               /\.png$/,
               "-caption.png",
-            ),
+            )}`,
             overlayBytes,
             { date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined },
           );
@@ -432,11 +462,9 @@ export async function processExport(
     }
 
     const name = outputName(entry, outExt, i, used);
-    folder.file(name, bytes, {
-      // Video EXIF isn't a thing, so the file's own timestamp carries the date.
+    // Video EXIF isn't a thing, so the file's own timestamp carries the date.
+    await folder.file(name, bytes, {
       date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined,
-      compression: "STORE",
-      binary: true,
     });
 
     if (entry?.takenAt != null) summary.datesRestored++;
@@ -458,8 +486,8 @@ export async function processExport(
     );
   }
 
-  folder.file("keepmysnaps-index.csv", csv.join("\n"));
-  folder.file(
+  await folder.file("keepmysnaps-index.csv", csv.join("\n"));
+  await folder.file(
     "README.txt",
     [
       "Your memories, with their real dates and locations put back.",
@@ -515,14 +543,8 @@ export async function processExport(
     label: "Packing your ZIP",
   });
 
-  const blob = await packZip(out, (percent) =>
-    report({
-      phase: "packing",
-      done: percent,
-      total: 100,
-      label: "Packing your ZIP",
-    }),
-  );
+  await out.close();
+  const blob = await sink.finish();
 
   report({ phase: "done", done: 100, total: 100, label: "Done" });
 
@@ -535,56 +557,38 @@ export async function processExport(
 
 
 /**
- * Writes the finished ZIP out.
+ * Where the finished ZIP is written while it is being made.
  *
- * `generateAsync({type: "blob"})` builds the whole archive in memory before
- * handing it over, which is fine for a demo and fatal for a real library: a
- * 13GB export reaches 100% and then dies assembling a blob no tab can hold.
- * So the bytes go straight into a file in the browser's own storage as they
- * are produced, and what comes back is backed by disk rather than by RAM.
- *
- * Falls back to the in-memory route where that storage isn't available, which
+ * Assembling the archive in memory and handing it over at the end is what made
+ * a real library impossible: a 13GB export finished its work and then died
+ * building a blob no tab can hold. So the bytes go into a file in the
+ * browser's own storage as they are produced, and what comes back at the end
+ * is backed by disk. Browsers without that storage fall back to memory, which
  * is the small-export case anyway.
  */
-async function packZip(out: JSZip, onPercent: (percent: number) => void): Promise<Blob> {
+async function openOutputSink(): Promise<{
+  writable: WritableStream<Uint8Array>;
+  finish: () => Promise<Blob>;
+}> {
   const opfs = await navigator.storage?.getDirectory?.().catch(() => null);
   if (opfs) {
     try {
       const handle = await opfs.getFileHandle(OUTPUT_FILENAME, { create: true });
       const writable = await handle.createWritable();
-      await new Promise<void>((resolve, reject) => {
-        const stream = out.generateInternalStream({
-          type: "uint8array",
-          compression: "STORE",
-          streamFiles: false,
-        });
-        stream
-          .on("data", (chunk: Uint8Array, meta: { percent: number }) => {
-            onPercent(Math.round(meta.percent));
-            // Writes are async and the callback isn't, so hold the generator
-            // while each chunk lands. Without this the queue grows and we are
-            // back to holding the archive in memory.
-            stream.pause();
-            writable
-              .write(chunk as unknown as ArrayBufferView<ArrayBuffer>)
-              .then(() => stream.resume())
-              .catch(reject);
-          })
-          .on("error", reject)
-          .on("end", () => resolve());
-        stream.resume();
-      });
-      await writable.close();
-      return await handle.getFile();
+      return {
+        writable: writable as unknown as WritableStream<Uint8Array>,
+        finish: async () => handle.getFile(),
+      };
     } catch {
-      // Out of quota, or a browser that only pretends to support this. Fall
-      // through: an in-memory attempt at least works for a small export.
+      // No quota, or a browser that only claims to support this.
     }
   }
 
-  return out.generateAsync({ type: "blob", compression: "STORE" }, (meta) =>
-    onPercent(Math.round(meta.percent)),
-  );
+  const blobWriter = new BlobWriter("application/zip");
+  return {
+    writable: blobWriter.writable as unknown as WritableStream<Uint8Array>,
+    finish: () => blobWriter.getData(),
+  };
 }
 
 /** Cheap pre-flight so we can be rude about the wrong file straight away. */
