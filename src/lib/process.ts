@@ -23,6 +23,9 @@ import { stampMp4CreationTime } from "./mp4time";
 
 export class NotASnapchatExport extends Error {}
 
+/** The finished archive, parked in the browser's own storage while it's built. */
+const OUTPUT_FILENAME = "keepmysnaps-output.zip";
+
 export type Progress = {
   phase: "reading" | "matching" | "fixing" | "packing" | "done";
   done: number;
@@ -497,16 +500,13 @@ export async function processExport(
     label: "Packing your ZIP",
   });
 
-  const blob = await out.generateAsync(
-    { type: "blob", compression: "STORE" },
-    (meta) => {
-      report({
-        phase: "packing",
-        done: Math.round(meta.percent),
-        total: 100,
-        label: "Packing your ZIP",
-      });
-    },
+  const blob = await packZip(out, (percent) =>
+    report({
+      phase: "packing",
+      done: percent,
+      total: 100,
+      label: "Packing your ZIP",
+    }),
   );
 
   report({ phase: "done", done: 100, total: 100, label: "Done" });
@@ -515,6 +515,60 @@ export async function processExport(
   zips.length = 0;
 
   return { blob, summary };
+}
+
+
+/**
+ * Writes the finished ZIP out.
+ *
+ * `generateAsync({type: "blob"})` builds the whole archive in memory before
+ * handing it over, which is fine for a demo and fatal for a real library: a
+ * 13GB export reaches 100% and then dies assembling a blob no tab can hold.
+ * So the bytes go straight into a file in the browser's own storage as they
+ * are produced, and what comes back is backed by disk rather than by RAM.
+ *
+ * Falls back to the in-memory route where that storage isn't available, which
+ * is the small-export case anyway.
+ */
+async function packZip(out: JSZip, onPercent: (percent: number) => void): Promise<Blob> {
+  const opfs = await navigator.storage?.getDirectory?.().catch(() => null);
+  if (opfs) {
+    try {
+      const handle = await opfs.getFileHandle(OUTPUT_FILENAME, { create: true });
+      const writable = await handle.createWritable();
+      await new Promise<void>((resolve, reject) => {
+        const stream = out.generateInternalStream({
+          type: "uint8array",
+          compression: "STORE",
+          streamFiles: false,
+        });
+        stream
+          .on("data", (chunk: Uint8Array, meta: { percent: number }) => {
+            onPercent(Math.round(meta.percent));
+            // Writes are async and the callback isn't, so hold the generator
+            // while each chunk lands. Without this the queue grows and we are
+            // back to holding the archive in memory.
+            stream.pause();
+            writable
+              .write(chunk as unknown as ArrayBufferView<ArrayBuffer>)
+              .then(() => stream.resume())
+              .catch(reject);
+          })
+          .on("error", reject)
+          .on("end", () => resolve());
+        stream.resume();
+      });
+      await writable.close();
+      return await handle.getFile();
+    } catch {
+      // Out of quota, or a browser that only pretends to support this. Fall
+      // through: an in-memory attempt at least works for a small export.
+    }
+  }
+
+  return out.generateAsync({ type: "blob", compression: "STORE" }, (meta) =>
+    onPercent(Math.round(meta.percent)),
+  );
 }
 
 /** Cheap pre-flight so we can be rude about the wrong file straight away. */
