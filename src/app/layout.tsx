@@ -4,6 +4,7 @@ import { OG_IMAGE, SITE_URL, TWITTER_CARD } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import ContactLauncher from "@/components/ContactLauncher";
 import { siteGraph } from "@/lib/jsonld";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -62,6 +63,7 @@ export default function RootLayout({
         <JsonLd data={siteGraph()} />
         {children}
         <ContactLauncher />
+        <Analytics />
       </body>
     </html>
   );
