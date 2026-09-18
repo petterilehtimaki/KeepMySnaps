@@ -5,6 +5,7 @@
  */
 import JSZip from "jszip";
 import {
+  freeSelection,
   groupMediaFiles,
   matchEntriesToMedia,
   parseMemoriesHistory,
@@ -252,7 +253,8 @@ export async function processExport(
   // random one.
   pairings.sort((a, b) => (a.entry?.takenAt ?? 0) - (b.entry?.takenAt ?? 0));
 
-  const selected = limit === null ? pairings : pairings.slice(0, limit);
+  const selected =
+    limit === null ? pairings : freeSelection(entries, pairings, limit);
 
   const out = new JSZip();
   const folder = out.folder("KeepMySnaps")!;

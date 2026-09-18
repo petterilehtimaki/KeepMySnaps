@@ -15,8 +15,8 @@ import SaveChoice, { hasStoredUnlock, scrollToChooseFile } from "./SaveChoice";
 
 type State =
   | { kind: "idle" }
-  /** Blocked before anything was opened. `count` is how many ZIPs were offered. */
-  | { kind: "locked"; reason: "multi" | "used"; count: number }
+  /** Free run already spent in this tab. `count` is how many ZIPs were offered. */
+  | { kind: "locked"; count: number }
   | { kind: "working"; progress: Progress }
   | { kind: "done"; summary: Summary; url: string }
   | { kind: "error"; message: string };
@@ -88,17 +88,17 @@ export default function Uploader() {
       // blocked drop never flashes "Opening the ZIP" at someone.
       const isUnlocked = await settled();
 
-      // Both gates are free-tier only, and both answer before a single byte
-      // is read: being turned away shouldn't cost you a five-gigabyte unzip.
-      if (!isUnlocked) {
-        if (freeRunUsedRef.current) {
-          setState({ kind: "locked", reason: "used", count: zips.length });
-          return;
-        }
-        if (zips.length > 1) {
-          setState({ kind: "locked", reason: "multi", count: zips.length });
-          return;
-        }
+      // The free tier is one run, not one ZIP. Snapchat splits an export
+      // across several and only one of them holds memories_history.json, so
+      // asking somebody to pick the right one is asking them to know something
+      // they have no way of knowing: they drop all of them, or they drop the
+      // wrong one and get told it isn't a Snapchat export. The 20-file limit
+      // and the one-run-per-tab gate below do the work the ZIP count used to.
+      // Answered before a single byte is read: being turned away shouldn't
+      // cost you a five-gigabyte unzip.
+      if (!isUnlocked && freeRunUsedRef.current) {
+        setState({ kind: "locked", count: zips.length });
+        return;
       }
 
       if (urlRef.current) {
@@ -264,11 +264,7 @@ export default function Uploader() {
         ) : null}
 
         {state.kind === "locked" && (
-          <LockedPanel
-            reason={state.reason}
-            count={state.count}
-            onDismiss={() => setState({ kind: "idle" })}
-          />
+          <LockedPanel count={state.count} />
         )}
 
         {state.kind === "working" && (
@@ -440,50 +436,26 @@ function UnlockButton() {
   );
 }
 
-/** Shown in place of the drop zone when a free-tier drop is turned away. */
-function LockedPanel({
-  reason,
-  count,
-  onDismiss,
-}: {
-  reason: "multi" | "used";
-  count: number;
-  onDismiss: () => void;
-}) {
-  const multi = reason === "multi";
-
+/** Shown in place of the drop zone when the one free run has already been spent. */
+function LockedPanel({ count }: { count: number }) {
   return (
     <div className="rounded-[10px] border border-hair px-6 py-16 text-center">
       <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
-        {multi
-          ? `${count} export ZIPs at once`
-          : "You’ve had the free preview"}
+        You&rsquo;ve had the free preview
       </p>
 
       <p className="mx-auto mt-3 max-w-[48ch] text-[0.875rem] leading-[1.65] text-muted-cool">
-        {multi
-          ? `One at a time is the free tier. ${PRICE_LABEL} runs all ${count} together, with no limit on how many memories come out.`
-          : `The first ${FREE_FILE_LIMIT} files are on the house, once. ${PRICE_LABEL} unlocks this export and every other ZIP Snapchat split it into, in full.`}
+        {`The first ${FREE_FILE_LIMIT} files are on the house, once. ${PRICE_LABEL} unlocks ${
+          count > 1 ? `all ${count} of those ZIPs` : "this export"
+        }, in full.`}
       </p>
 
       <UnlockButton />
 
-      {multi && (
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="text-[0.8125rem] font-semibold text-muted-cool underline underline-offset-4 transition-colors hover:text-ink"
-          >
-            Or drop a single ZIP to try it free
-          </button>
-        </div>
-      )}
-
       <p className="mx-auto mt-7 max-w-[44ch] text-[0.75rem] leading-[1.6] text-muted-cool">
-        {multi
-          ? "Nothing was opened. Those files haven't been read."
-          : "Nothing was opened. That file hasn't been read."}
+        {count > 1
+          ? "Nothing was opened. Those files haven’t been read."
+          : "Nothing was opened. That file hasn’t been read."}
       </p>
     </div>
   );

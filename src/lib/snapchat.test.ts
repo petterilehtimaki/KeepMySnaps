@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  freeSelection,
   groupMediaFiles,
   matchEntriesToMedia,
   parseLocation,
@@ -214,4 +215,47 @@ test("keeps the coordinate when the day's memories share a place", () => {
   );
   // The centre of 60.16952 and 60.17100.
   assert.ok(Math.abs(pairs[0].location!.lat - 60.17026) < 0.0001);
+});
+
+test("the free batch is the same memories whichever ZIPs were dropped", () => {
+  // Eight memories, newest first, the way Snapchat lists them.
+  const entries = Array.from({ length: 8 }, (_, i) => ({
+    takenAt: Date.UTC(2020 - i, 0, 1),
+    lat: null,
+    lon: null,
+    caption: null,
+    mediaId: null,
+    mediaType: "image" as const,
+  }));
+
+  const datesFor = (indexes: number[]) => {
+    const groups = indexes.map((i) => ({
+      key: `k${i}`,
+      base: `memories/${i}-main.jpg`,
+      overlay: null,
+      filenameDate: null,
+    }));
+    return freeSelection(entries, matchEntriesToMedia(entries, groups), 3)
+      .map((p: { entry: { takenAt: number | null } | null }) => p.entry!.takenAt)
+      .sort();
+  };
+
+  const oldestThree = entries
+    .map((e) => e.takenAt)
+    .sort((a, b) => a - b)
+    .slice(0, 3);
+
+  // Everything dropped: the three oldest memories, and only those.
+  assert.deepEqual(datesFor([0, 1, 2, 3, 4, 5, 6, 7]).sort(), [...oldestThree].sort());
+
+  // Parts held back: never a memory from outside that same three, so nobody
+  // farms a fresh free batch by re-dropping a different combination of ZIPs.
+  for (const subset of [[5, 6, 7], [0, 5, 6, 7], [2, 3, 4, 5, 6, 7], [0, 1, 2, 3]]) {
+    for (const takenAt of datesFor(subset)) {
+      assert.ok(oldestThree.includes(takenAt!));
+    }
+  }
+
+  // And holding back the oldest files gets fewer, not a fresh three.
+  assert.ok(datesFor([0, 1]).length < 3);
 });
