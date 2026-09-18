@@ -270,8 +270,22 @@ export async function burnOverlayIntoVideo(
     bitrate: Math.min(8_000_000, Math.max(2_000_000, width * height * 4)),
     framerate: Math.max(1, Math.round(sourceFps(video, track))),
   };
-  if (!(await VideoEncoder.isConfigSupported(config)).supported) return null;
-  encoder.configure(config);
+
+  // Ask for the hardware encoder first. Without this the browser is free to
+  // pick the software one, and at 1080x1920 that is the difference between a
+  // few seconds per clip and a minute per clip on the same machine. Not every
+  // browser offers it, so fall back to whatever it will accept rather than
+  // giving up and writing the caption out as a PNG.
+  const accelerated: VideoEncoderConfig = {
+    ...config,
+    hardwareAcceleration: "prefer-hardware",
+  };
+  const chosen = (await VideoEncoder.isConfigSupported(accelerated).catch(() => null))
+    ?.supported
+    ? accelerated
+    : config;
+  if (!(await VideoEncoder.isConfigSupported(chosen)).supported) return null;
+  encoder.configure(chosen);
 
   const decoder = new VideoDecoder({
     output: (frame) => {
@@ -330,8 +344,21 @@ export async function burnOverlayIntoVideo(
         }),
       );
       // Let the encoder drain rather than queueing a whole clip at once.
+      // `ondequeue` fires as the queue empties; setTimeout is the fallback for
+      // browsers without it, where nested timers get clamped to 4ms and turn
+      // the wait itself into a cost.
       while (encoder.encodeQueueSize > QUEUE_LIMIT && !failed) {
-        await new Promise((r) => setTimeout(r, 0));
+        await new Promise<void>((resolve) => {
+          if ("ondequeue" in encoder) {
+            const enc = encoder as VideoEncoder & { ondequeue: (() => void) | null };
+            enc.ondequeue = () => {
+              enc.ondequeue = null;
+              resolve();
+            };
+          } else {
+            setTimeout(resolve, 0);
+          }
+        });
       }
     }
 
