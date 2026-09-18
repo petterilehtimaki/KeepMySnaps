@@ -260,7 +260,7 @@ def media_id(rng: random.Random) -> str:
     return f"{take(8)}-{take(4)}-{take(4)}-{take(4)}-{take(12)}"
 
 
-def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None) -> Path:
+def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None, hero: int = 0) -> Path:
     rng = random.Random(SEED)
     work = out_dir / "keepmysnaps-demo-export"
     if work.exists():
@@ -300,6 +300,16 @@ def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None
 
     entries = []
     truth: dict[str, dict] = {}
+    hero_stems: set[str] = set()
+
+    # Where the hero batch starts. `stamps` runs newest first, so everything
+    # from here on is older. The cut is nudged back so a day is never split
+    # between the bundle ZIP and a continuation: the site's free run takes the
+    # oldest 20 by timestamp, and a half-split day could hand one of those
+    # slots to a filler file sitting in another ZIP.
+    hero_cut = len(stamps) - hero if hero else len(stamps)
+    while 0 < hero_cut < len(stamps) and stamps[hero_cut - 1].date() == stamps[hero_cut].date():
+        hero_cut -= 1
     for index, when in enumerate(stamps):
         mid = media_id(rng)
         day = when.strftime("%Y-%m-%d")
@@ -308,7 +318,14 @@ def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None
 
         top, bottom = PALETTES[index % len(PALETTES)]
         size = (1080, 1920) if index % 3 else (1920, 1080)
-        frame = photos.frame(size) if photos else gradient(size, top, bottom, rng)
+        # `stamps` runs newest first, so the oldest memories are the last ones,
+        # and those are the ones the free batch of 20 will pick up. When a hero
+        # batch is asked for, they get the real photos and everything newer
+        # stays generated art nobody will see on camera.
+        is_hero = index >= hero_cut if hero else bool(photos)
+        frame = photos.frame(size) if (photos and is_hero) else gradient(size, top, bottom, rng)
+        if is_hero:
+            hero_stems.add(stem)
 
         if is_video:
             path = memories_dir / f"{stem}-main.mp4"
@@ -467,11 +484,20 @@ def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None
     # is why feeding just one part produces a pile of undated files.
     stem = f"mydata~{SPLIT_STAMP}"
     all_media = sorted(f for f in memories_dir.iterdir() if f.is_file())
-    per_part = math.ceil(len(all_media) / max(1, parts))
+    if hero_stems and hero:
+        # The bundle ZIP holds exactly the hero memories, because that is the
+        # ZIP the JSON lives in and the one you open on camera. Everything else
+        # goes in the six continuations.
+        bundle = [f for f in all_media if f.name.split("-main")[0].split("-overlay")[0].split("-thumbnail")[0] in hero_stems]
+        rest = [f for f in all_media if f not in bundle]
+        per_part = math.ceil(len(rest) / max(1, parts - 1)) if parts > 1 else len(rest)
+        slices = [bundle] + [rest[i * per_part : (i + 1) * per_part] for i in range(max(0, parts - 1))]
+    else:
+        per_part = math.ceil(len(all_media) / max(1, parts))
+        slices = [all_media[i * per_part : (i + 1) * per_part] for i in range(parts)]
     written: list[Path] = []
 
-    for part in range(parts):
-        slice_ = all_media[part * per_part : (part + 1) * per_part]
+    for part, slice_ in enumerate(slices):
         if not slice_ and part:
             break
         name = f"{stem}.zip" if part == 0 else f"{stem}-{part + 1}.zip"
@@ -521,12 +547,17 @@ def main() -> None:
     ap.add_argument("--count", type=int, default=48, help="how many memories to generate (default: 48)")
     ap.add_argument("--parts", type=int, default=7, help="how many ZIPs to split it across, the way Snapchat does (default: 7, which is what a real export of this size arrived as)")
     ap.add_argument("--photos", type=Path, help="folder of images to use instead of the generated art, for demo footage that looks like a real library")
+    ap.add_argument("--hero", type=int, help="how many of the OLDEST memories get the real photos and go in the first ZIP (default: 20 when --photos is given, which is exactly what the free run fixes)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     pool = PhotoPool(args.photos) if args.photos else None
+    hero = args.hero if args.hero is not None else (20 if pool else 0)
+    hero = min(max(0, hero), args.count)
     if pool:
         print(f"Using {len(pool.paths)} photo(s) from {args.photos}")
-    build(args.out, max(1, args.count), max(1, args.parts), pool)
+        if hero:
+            print(f"The oldest {hero} memories get them, and go in the first ZIP. The rest is filler.")
+    build(args.out, max(1, args.count), max(1, args.parts), pool, hero)
 
 
 if __name__ == "__main__":
