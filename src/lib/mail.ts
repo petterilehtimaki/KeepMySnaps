@@ -80,3 +80,59 @@ export async function sendContactMessage(msg: Message): Promise<SendResult> {
     return { ok: false, reason: "failed" };
   }
 }
+
+/**
+ * Sends somebody back the link that unlocks their purchase.
+ *
+ * The unlock lives in the browser that paid, which is fine until that person
+ * opens the site on their phone and is asked for five dollars they have
+ * already handed over. This is the way back, and it deliberately needs
+ * nothing from us: Stripe is asked whether that address bought anything, the
+ * link goes to that address, and nothing about it is written down here.
+ */
+export async function sendRestoreLink(
+  to: string,
+  link: string,
+): Promise<SendResult> {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM;
+  if (!key || !from) return { ok: false, reason: "unconfigured" };
+
+  const payload = {
+    from,
+    to: [to],
+    subject: "Your KeepMySnaps unlock",
+    text: [
+      "Here's the link that unlocks your export again:",
+      "",
+      link,
+      "",
+      "Open it in whichever browser you want to do the work in. It unlocks that",
+      "browser the same way paying did, and it keeps working, so keep this email",
+      "if you might redo this later.",
+      "",
+      "Your photos never came near us and still haven't. This link only proves",
+      "the payment.",
+    ].join("\n"),
+  };
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      console.error("[restore] resend rejected the message", res.status);
+      return { ok: false, reason: "failed" };
+    }
+    return { ok: true };
+  } catch (err) {
+    console.error("[restore] could not reach the mail provider", err);
+    return { ok: false, reason: "failed" };
+  }
+}

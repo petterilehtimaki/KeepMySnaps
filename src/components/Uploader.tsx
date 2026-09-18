@@ -12,6 +12,7 @@ import {
 import { FREE_FILE_LIMIT, PRICE_LABEL } from "@/lib/config";
 import { startCheckout, useUnlock } from "./useUnlock";
 import { Button, Eyebrow, Section } from "./ui";
+import RestoreUnlock from "./RestoreUnlock";
 import SaveChoice, { hasStoredUnlock, scrollToChooseFile } from "./SaveChoice";
 
 type State =
@@ -256,6 +257,12 @@ export default function Uploader() {
               </p>
             )}
 
+            {unlockStatus !== "unlocked" && state.kind === "idle" && (
+              <div className="mt-6">
+                <RestoreUnlock />
+              </div>
+            )}
+
             {freeRunUsed &&
               unlockStatus !== "unlocked" &&
               state.kind !== "error" && (
@@ -470,6 +477,10 @@ function LockedPanel({ count }: { count: number }) {
       </p>
 
       <UnlockButton />
+
+      <div className="mt-6">
+        <RestoreUnlock />
+      </div>
 
       <p className="mx-auto mt-7 max-w-[44ch] text-[0.75rem] leading-[1.6] text-muted-cool">
         {count > 1

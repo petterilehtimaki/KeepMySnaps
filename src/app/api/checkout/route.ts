@@ -34,6 +34,10 @@ export async function POST(request: Request) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      // So a purchase can be found again by the address that made it. Without
+      // a customer record a guest checkout is only reachable by session id,
+      // which is exactly the thing somebody has lost when they need this.
+      customer_creation: "always",
       line_items: [
         {
           quantity: 1,

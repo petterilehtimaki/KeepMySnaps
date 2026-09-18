@@ -64,6 +64,10 @@ export const PRIVACY: LegalBlock[] = [
         lead: "Confirming a payment.",
         text: "When you come back afterwards, your browser sends the Checkout session id so the site can ask Stripe a single question: was this session paid? Nothing else is sent.",
       },
+      {
+        lead: "Getting an unlock back.",
+        text: "If you paid and then opened the site somewhere else, you can ask for the link again. You type the address you paid with, this site asks Stripe whether that address bought anything, and if it did the link is emailed there. The address is used for those two things and is not written down here.",
+      },
     ],
   },
 
