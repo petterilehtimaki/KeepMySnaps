@@ -39,7 +39,7 @@ export const ROUTES = [
   { path: "/waiting-for-your-export", priority: 0.9, updated: "2026-09-13" },
   { path: "/faq", priority: 0.8, updated: "2026-09-13" },
   { path: "/contact", priority: 0.5, updated: "2026-09-13" },
-  { path: "/privacy", priority: 0.3, updated: "2026-09-13" },
+  { path: "/privacy", priority: 0.3, updated: "2026-09-18" },
   { path: "/terms", priority: 0.3, updated: "2026-09-13" },
 ] as const;
 
