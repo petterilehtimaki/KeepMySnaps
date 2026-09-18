@@ -37,7 +37,8 @@ no location at all. A demo that only contains the happy path proves nothing.
 Usage:
     python3 scripts/make-demo-export.py
     python3 scripts/make-demo-export.py --out ~/Desktop --count 60
-    python3 scripts/make-demo-export.py --photos ~/Desktop/demo-photos
+    python3 scripts/make-demo-export.py --photos ~/Desktop/demo-photos \
+        --videos ~/Desktop/demo-clips
 
 Requires Pillow (`pip install pillow`). This is a development tool — it is not
 imported by the app and does not run in CI.
@@ -198,6 +199,56 @@ class PhotoPool:
         return img.crop((left, top, left + w, top + h))
 
 
+class ClipPool:
+    """Real video clips to use instead of the still-image MP4s.
+
+    The generated videos are a single frame held for three seconds, which is
+    enough to prove the pipeline handles an MP4 and useless as footage: a
+    tutorial that plays one on camera looks broken. Point `--videos` at a
+    folder of clips (Veo output is fine) and each video memory takes the next
+    one, filled to the frame and trimmed.
+    """
+
+    SUFFIXES = {".mp4", ".mov", ".m4v", ".webm"}
+
+    def __init__(self, folder: Path):
+        self.paths = sorted(p for p in folder.iterdir() if p.suffix.lower() in self.SUFFIXES)
+        if not self.paths:
+            raise SystemExit(f"No clips in {folder}. Looked for {', '.join(sorted(self.SUFFIXES))}.")
+        self.cursor = 0
+
+    def write(self, dest: Path, size: tuple[int, int], seconds: int = 4) -> bool:
+        src = self.paths[self.cursor % len(self.paths)]
+        self.cursor += 1
+        w, h = size
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-t", str(seconds),
+                 "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}",
+                 "-r", "30", "-pix_fmt", "yuv420p", "-c:v", "libx264", "-crf", "20",
+                 "-c:a", "aac", "-shortest", str(dest)],
+                check=True,
+            )
+        except (subprocess.CalledProcessError, OSError):
+            return False
+        return dest.exists()
+
+    def poster(self, dest: Path) -> Image.Image | None:
+        """First frame of the clip just written, for the thumbnail."""
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-loglevel", "error", "-i", str(dest), "-frames:v", "1",
+                 str(dest.with_suffix(".poster.png"))],
+                check=True,
+            )
+            with Image.open(dest.with_suffix(".poster.png")) as im:
+                out = im.convert("RGB").copy()
+            dest.with_suffix(".poster.png").unlink(missing_ok=True)
+            return out
+        except (subprocess.CalledProcessError, OSError):
+            return None
+
+
 def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     for candidate in (
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
@@ -339,7 +390,7 @@ def media_id(rng: random.Random) -> str:
     return f"{take(8)}-{take(4)}-{take(4)}-{take(4)}-{take(12)}"
 
 
-def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None, hero: int = 0) -> Path:
+def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None, hero: int = 0, clips: "ClipPool | None" = None) -> Path:
     rng = random.Random(SEED)
     work = out_dir / "keepmysnaps-demo-export"
     if work.exists():
@@ -408,7 +459,12 @@ def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None
 
         if is_video:
             path = memories_dir / f"{stem}-main.mp4"
-            if not make_video(path, frame):
+            # A real clip for the memories the video will actually open, a
+            # still-image MP4 for the filler nobody sees.
+            wrote = clips.write(path, size) if (clips and is_hero) else False
+            if wrote:
+                frame = clips.poster(path) or frame
+            elif not make_video(path, frame):
                 is_video = False
         if not is_video:
             path = memories_dir / f"{stem}-main.jpg"
@@ -641,17 +697,21 @@ def main() -> None:
     ap.add_argument("--count", type=int, default=48, help="how many memories to generate (default: 48)")
     ap.add_argument("--parts", type=int, default=7, help="how many ZIPs to split it across, the way Snapchat does (default: 7, which is what a real export of this size arrived as)")
     ap.add_argument("--photos", type=Path, help="folder of images to use instead of the generated art, for demo footage that looks like a real library")
+    ap.add_argument("--videos", type=Path, help="folder of real clips to use for the video memories in the hero batch (Veo output, anything ffmpeg reads)")
     ap.add_argument("--hero", type=int, help="how many of the OLDEST memories get the real photos and go in the first ZIP (default: 20 when --photos is given, which is exactly what the free run fixes)")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     pool = PhotoPool(args.photos) if args.photos else None
-    hero = args.hero if args.hero is not None else (20 if pool else 0)
+    reel = ClipPool(args.videos) if args.videos else None
+    hero = args.hero if args.hero is not None else (20 if (pool or reel) else 0)
     hero = min(max(0, hero), args.count)
     if pool:
         print(f"Using {len(pool.paths)} photo(s) from {args.photos}")
         if hero:
             print(f"The oldest {hero} memories get them, and go in the first ZIP. The rest is filler.")
-    build(args.out, max(1, args.count), max(1, args.parts), pool, hero)
+    if reel:
+        print(f"Using {len(reel.paths)} clip(s) from {args.videos} for the video memories")
+    build(args.out, max(1, args.count), max(1, args.parts), pool, hero, reel)
 
 
 if __name__ == "__main__":
