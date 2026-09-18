@@ -34,7 +34,31 @@ import { stampMp4CreationTime } from "./mp4time";
 // Inflate in workers so a 2GB part doesn't freeze the tab it is being read in.
 configure({ useWebWorkers: true });
 
-export class NotASnapchatExport extends Error {}
+/** An error whose message is written for the person reading it. */
+export class UserFacingError extends Error {}
+
+export class NotASnapchatExport extends UserFacingError {}
+
+/** This browser can't do an export this size, whatever the machine can. */
+export class BrowserTooSmall extends UserFacingError {}
+
+/** The machine can, but the browser isn't allowed enough room. */
+export class NotEnoughRoom extends UserFacingError {}
+
+/**
+ * How much a browser stuck working in memory can take before it dies.
+ *
+ * Nothing magic about the number: a tab gets a couple of gigabytes, the
+ * archive has to fit alongside the photos being read, and Safari falls over
+ * well before the theoretical limit. Under this, working in memory is fine
+ * and always has been.
+ */
+const MEMORY_ONLY_LIMIT = 1_500_000_000;
+
+const gb = (bytes: number) =>
+  bytes >= 1_000_000_000
+    ? `${(bytes / 1_000_000_000).toFixed(1)} GB`
+    : `${Math.round(bytes / 1_000_000)} MB`;
 
 /** The finished archive, parked in the browser's own storage while it's built. */
 const OUTPUT_FILENAME = "keepmysnaps-output.zip";
@@ -211,6 +235,9 @@ export async function processExport(
   const { limit, onProgress, signal } = options;
   const report = (p: Progress) => onProgress?.(p);
 
+  const inputBytes = files.reduce((total, f) => total + f.size, 0);
+  await preflight(inputBytes);
+
   report({ phase: "reading", done: 0, total: files.length, label: "Opening the ZIP" });
 
   // Read the archives without loading them.
@@ -319,7 +346,6 @@ export async function processExport(
   // describe itself and comes out malformed, which is the case this tool has
   // to survive; below that, a plain ZIP is what every unarchiver on earth
   // opens without thinking about it.
-  const inputBytes = files.reduce((total, f) => total + f.size, 0);
   const out = new ZipWriter(sink.writable, {
     zip64: inputBytes > 3_000_000_000 || mediaFiles.length > 60_000,
     level: 0,
@@ -555,6 +581,72 @@ export async function processExport(
   return { blob, summary };
 }
 
+
+/**
+ * Answers before any work starts: can this browser finish this export?
+ *
+ * Both answers used to be found out the slow way. A browser that can only
+ * work in memory showed a progress bar for ten minutes and then died, which
+ * reads as a broken product rather than the wrong browser. And a machine
+ * without room failed at the very end, after all the work.
+ */
+async function preflight(inputBytes: number): Promise<void> {
+  const root = await opfsRoot();
+  let streams = false;
+  if (root) {
+    try {
+      // Clearing last run's archive and proving the browser can stream are the
+      // same act: opening the file for writing truncates it.
+      const handle = await root.getFileHandle(OUTPUT_FILENAME, { create: true });
+      const writable = await handle.createWritable();
+      await writable.close();
+      streams = true;
+    } catch {
+      streams = false;
+    }
+  }
+
+  if (!streams) {
+    if (inputBytes > MEMORY_ONLY_LIMIT) {
+      throw new BrowserTooSmall(
+        `That's ${gb(inputBytes)} of export, and this browser can only work in memory, so it would run out partway through. Chrome or Edge can do it. Nothing is uploaded there either: the work still happens on your machine.`,
+      );
+    }
+    return;
+  }
+
+  // The finished archive is about the size of what went in, since photos and
+  // video don't compress.
+  const needed = Math.round(inputBytes * 1.05);
+  const { quota = 0, usage = 0 } = (await navigator.storage?.estimate?.()) ?? {};
+  const room = Math.max(0, quota - usage);
+  if (quota && room < needed) {
+    throw new NotEnoughRoom(
+      `This needs about ${gb(needed)} of room to write the fixed copy, and this browser is only allowed ${gb(room)}. Free up disk space and try again. You'll also want about ${gb(needed)} spare wherever your downloads land.`,
+    );
+  }
+}
+
+async function opfsRoot(): Promise<FileSystemDirectoryHandle | null> {
+  try {
+    return (await navigator.storage?.getDirectory?.()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Throws away the archive left in the browser's own storage.
+ *
+ * A finished export sits there until something deletes it, and so does half a
+ * one after a stopped run. Both are invisible in Finder and both are the size
+ * of somebody's photo library, so every run starts by clearing the last one
+ * and the page clears it again when you're done with it.
+ */
+export async function clearStoredOutput(): Promise<void> {
+  const root = await opfsRoot();
+  await root?.removeEntry(OUTPUT_FILENAME).catch(() => {});
+}
 
 /**
  * Where the finished ZIP is written while it is being made.

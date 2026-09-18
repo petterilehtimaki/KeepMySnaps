@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  NotASnapchatExport,
+  UserFacingError,
+  clearStoredOutput,
   looksLikeZip,
   processExport,
   type Progress,
@@ -53,6 +54,9 @@ export default function Uploader() {
     () => () => {
       abortRef.current?.abort();
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      // Leaving the page with a finished archive parked in browser storage
+      // would leave a copy of somebody's library behind, invisible to them.
+      void clearStoredOutput();
     },
     [],
   );
@@ -145,7 +149,7 @@ export default function Uploader() {
         setState({
           kind: "error",
           message:
-            err instanceof NotASnapchatExport
+            err instanceof UserFacingError
               ? err.message
               : "Something fell over partway through. That one's on us. Try again, and if it keeps happening the export is probably shaped in a way we haven't seen yet.",
         });
@@ -299,7 +303,14 @@ export default function Uploader() {
             summary={state.summary}
             url={state.url}
             unlocked={unlocked}
-            onReset={() => setState({ kind: "idle" })}
+            onReset={() => {
+              if (urlRef.current) {
+                URL.revokeObjectURL(urlRef.current);
+                urlRef.current = null;
+              }
+              void clearStoredOutput();
+              setState({ kind: "idle" });
+            }}
           />
         )}
       </div>
