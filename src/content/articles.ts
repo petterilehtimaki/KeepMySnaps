@@ -466,7 +466,7 @@ export const ARTICLES: Article[] = [
       { kind: "h", text: "Android" },
       {
         kind: "p",
-        text: "Much the same, with a different Files app. It has [its own guide](/on-android).",
+        text: "Much the same, with a different Files app. It has [its own guide](/on-android). Either way, once the fixed files are back, [keep them in their own album](/snapchat-memories-own-album-iphone) rather than loose in the camera roll.",
       },
     ],
     closer: {
@@ -525,6 +525,11 @@ export const ARTICLES: Article[] = [
       {
         kind: "p",
         text: "Captioned videos are re-encoded with the video encoder built into the browser, which Chrome has on most Android phones. If yours can't encode a particular video, the caption isn't lost. It's saved as a PNG in a captions folder beside the videos.",
+      },
+      { kind: "h", text: "Where to put them afterwards" },
+      {
+        kind: "p",
+        text: "Android follows real folders, so the fixed memories can live in [a folder of their own](/snapchat-memories-own-folder-android) that Google Photos lists separately, instead of merging into the middle of everything else.",
       },
     ],
     closer: {
@@ -1073,6 +1078,110 @@ export const ARTICLES: Article[] = [
       text: "Dates, captions and locations back into every file, in your browser, with nothing uploaded. The first 20 files are free, so you can copy a small batch over and see how your NAS dates it before doing the rest.",
       href: "/snapchat-memories-to-immich",
       label: "Or Immich",
+    },
+  },
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-own-album-iphone",
+    published: "2026-09-18",
+    updated: "2026-09-18",
+    crumb: "Own album (iPhone)",
+    eyebrow: "After the fix",
+    h1: "How do I keep Snapchat Memories out of my camera roll?",
+    title: "Keep Snapchat Memories in their own album on iPhone | KeepMySnaps",
+    description:
+      "Eight years of Snapchat landing in the middle of your camera roll is the thing that stops people importing at all. Here is how to put them in their own album on iPhone, and why the order of the steps matters.",
+    lead: "Put them in an album, and do it in the first minute after importing. This is easier than it sounds, but there is one catch people hit: once the real capture dates are back, the photos do not sit at the end of your library. They slot into 2017, 2019, wherever they were actually taken, which is the whole point of fixing them and also the reason they are hard to find afterwards. The Recently Added album is what saves you, because it sorts by when the phone received a photo rather than when it was taken.",
+    blocks: [
+      { kind: "h", text: "The order that works" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "In Photos, open the Albums tab, tap the plus, New Album, and call it Snapchat Memories. Do this before you import anything." },
+          { lead: "2.", text: "Unzip the fixed ZIP in Files. Open the folder and check the dates look right on a few of them." },
+          { lead: "3.", text: "Select all the photos and videos in that folder, share, Save Images. They go into your library." },
+          { lead: "4.", text: "Go straight back to Photos and open Recently Added, in the Albums tab. Everything you just imported is sitting together there, whatever year it was taken." },
+          { lead: "5.", text: "Select, Add to Album, Snapchat Memories. Now they are in one place and also correctly dated in your timeline." },
+        ],
+      },
+      { kind: "h", text: "Why they scatter" },
+      {
+        kind: "p",
+        text: "Your photo library sorts by capture date, not import date. A broken export has every file stamped with the day you downloaded it, so importing it dumps eight years of Snapchat at the end of your camera roll in one block. That block is easy to find and completely wrong. A fixed export has the real dates back, so a photo from July 2017 goes and sits next to the other things you took in July 2017, which is what you wanted, and means there is no block to find later. Recently Added is the one view that still groups them, and it only holds them for a while.",
+      },
+      { kind: "h", text: "If you would rather they stayed out of Photos entirely" },
+      {
+        kind: "p",
+        text: "You do not have to import them at all. The fixed folder is a normal folder of normal files. Leave it in Files, or move it to iCloud Drive, and it behaves like any other archive: searchable, backed up if iCloud Drive is on, and completely absent from your camera roll. The dates and captions are already written into the files, so nothing is lost by waiting. You can import them into Photos years later and they will still land in the right year. If you do want them in Photos properly, with faces and places working, there is [a guide to that](/snapchat-memories-to-icloud)." ,
+      },
+      { kind: "h", text: "Two things not to import" },
+      {
+        kind: "p",
+        text: "The ZIP contains a CSV index of every memory and its real date. Keep it, do not import it, and it will not show up in Photos anyway. If some video captions could not be drawn back into their videos, they are saved as transparent PNGs in a captions subfolder. Leave that folder out of the import, or you will get a run of blank white rectangles in your album.",
+      },
+      { kind: "h", text: "Android" },
+      {
+        kind: "p",
+        text: "Same idea, different app, and on Android you get an actual folder rather than an album. It has [its own guide](/snapchat-memories-own-folder-android). The phone-only walkthrough for iPhone is [here](/on-iphone).",
+      },
+    ],
+    closer: {
+      title: "Fix the dates first",
+      text: "None of this works on a broken export, because every file carries the same date and the album is the only thing telling them apart. The first 20 files are free, so you can import a handful and see them land in the right year before doing the whole library.",
+      href: "/how-it-works",
+      label: "How it works",
+    },
+  },
+  /* ------------------------------------------------------------------ */
+  {
+    slug: "snapchat-memories-own-folder-android",
+    published: "2026-09-18",
+    updated: "2026-09-18",
+    crumb: "Own folder (Android)",
+    eyebrow: "After the fix",
+    h1: "How do I put Snapchat Memories in their own folder on Android?",
+    title: "Keep Snapchat Memories in their own folder on Android | KeepMySnaps",
+    description:
+      "On Android the fixed memories can live in a folder of their own that Google Photos shows separately, and you decide whether they get backed up at all. Here is the order to do it in.",
+    lead: "Android makes this easier than iPhone does, because the gallery follows real folders. Move the fixed memories into a folder named Snapchat Memories under Pictures, and Google Photos lists it as its own device folder. From there you choose whether it gets backed up to your Google account or stays on the phone, which is a decision iPhone never really offers you.",
+    blocks: [
+      { kind: "h", text: "The steps" },
+      {
+        kind: "ul",
+        items: [
+          { lead: "1.", text: "Unzip the fixed ZIP with the Files app. You get a folder of photos and videos with their real dates on them." },
+          { lead: "2.", text: "Create Internal storage, then Pictures, then a new folder called Snapchat Memories." },
+          { lead: "3.", text: "Move the fixed files into it. Move, not copy, or you will have two of everything and no easy way to tell which is which." },
+          { lead: "4.", text: "Open Google Photos and pull down to refresh. Under Library it appears as a device folder called Snapchat Memories." },
+          { lead: "5.", text: "Tap the folder and decide on backup. On means they sync to your Google account and merge into your main timeline by their real dates. Off means they stay on this phone only, in this folder." },
+        ],
+      },
+      { kind: "h", text: "Backed up or not is the real choice" },
+      {
+        kind: "p",
+        text: "With backup on, the memories join your main photo grid and sort by when they were taken, so a 2018 memory sits with your other 2018 photos. That is usually what people want, and it is what the fixed dates are for. It also counts against your Google storage, and a full Memories library is not small. With backup off, the folder stays a folder: visible in Google Photos under your device folders, absent from the main grid, and gone if you lose the phone. If that is the route you take, copy the folder to a computer or a drive as well, because a folder on one phone is not a backup.",
+      },
+      { kind: "h", text: "If you want an album as well" },
+      {
+        kind: "p",
+        text: "A device folder and an album are different things in Google Photos. The folder is where the files actually are. An album is a collection you make. If you back the folder up and then want them grouped, select the memories and add them to a new album, which you can then share as one link without sharing your whole library.",
+      },
+      { kind: "h", text: "Two things not to move in" },
+      {
+        kind: "p",
+        text: "The CSV index of your memories and their dates belongs somewhere else, in Documents or on a computer, not in a folder the gallery scans. And if the ZIP has a captions subfolder, which holds the video captions that could not be drawn back into their videos as transparent PNGs, keep that out too. Google Photos will happily index them as a run of blank images.",
+      },
+      { kind: "h", text: "iPhone" },
+      {
+        kind: "p",
+        text: "iPhone has no equivalent of a device folder, so it is an album instead, and the order of the steps matters more. That is [its own guide](/snapchat-memories-own-album-iphone). The phone-only walkthrough for Android is [here](/on-android)."
+      },
+    ],
+    closer: {
+      title: "Fix the dates first",
+      text: "A folder full of files all dated the day you downloaded them is a folder you will never open again. Put the real dates back first: the first 20 files are free, and nothing is uploaded.",
+      href: "/how-it-works",
+      label: "How it works",
     },
   },
 ];

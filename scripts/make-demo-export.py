@@ -22,6 +22,7 @@ no location at all. A demo that only contains the happy path proves nothing.
 Usage:
     python3 scripts/make-demo-export.py
     python3 scripts/make-demo-export.py --out ~/Desktop --count 60
+    python3 scripts/make-demo-export.py --photos ~/Desktop/demo-photos
 
 Requires Pillow (`pip install pillow`). This is a development tool — it is not
 imported by the app and does not run in CI.
@@ -113,6 +114,40 @@ def gradient(size: tuple[int, int], top: tuple, bottom: tuple, rng: random.Rando
 
     grain = Image.effect_noise((w, h), 14).convert("L")
     return Image.blend(img, Image.merge("RGB", (grain, grain, grain)), 0.05)
+
+
+class PhotoPool:
+    """Real photos to use instead of the generated art, if you have some.
+
+    The gradients are honest about being fake, which is right for a fixture and
+    wrong for a tutorial video: a viewer watching you rescue eight years of
+    abstract art does not feel what someone rescuing their own photos feels.
+    Point `--photos` at a folder (generated images are fine, and nobody's real
+    life ends up on camera) and each memory takes the next one, centre-cropped
+    to the frame it needs. Fewer photos than memories just means the folder
+    repeats.
+    """
+
+    SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
+
+    def __init__(self, folder: Path):
+        self.paths = sorted(p for p in folder.iterdir() if p.suffix.lower() in self.SUFFIXES)
+        if not self.paths:
+            raise SystemExit(f"No images in {folder}. Looked for {', '.join(sorted(self.SUFFIXES))}.")
+        self.cursor = 0
+
+    def frame(self, size: tuple[int, int]) -> Image.Image:
+        src = self.paths[self.cursor % len(self.paths)]
+        self.cursor += 1
+        try:
+            img = Image.open(src).convert("RGB")
+        except OSError as exc:  # HEIC without a plugin is the usual one
+            raise SystemExit(f"Could not read {src.name}: {exc}")
+        w, h = size
+        scale = max(w / img.width, h / img.height)
+        img = img.resize((round(img.width * scale), round(img.height * scale)), Image.LANCZOS)
+        left, top = (img.width - w) // 2, (img.height - h) // 2
+        return img.crop((left, top, left + w, top + h))
 
 
 def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -210,7 +245,7 @@ def media_id(rng: random.Random) -> str:
     return f"{take(8)}-{take(4)}-{take(4)}-{take(4)}-{take(12)}"
 
 
-def build(out_dir: Path, count: int, parts: int) -> Path:
+def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None) -> Path:
     rng = random.Random(SEED)
     work = out_dir / "keepmysnaps-demo-export"
     if work.exists():
@@ -257,7 +292,7 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
 
         top, bottom = PALETTES[index % len(PALETTES)]
         size = (1080, 1920) if index % 3 else (1920, 1080)
-        frame = gradient(size, top, bottom, rng)
+        frame = photos.frame(size) if photos else gradient(size, top, bottom, rng)
 
         if is_video:
             path = memories_dir / f"{stem}-main.mp4"
@@ -332,7 +367,7 @@ def build(out_dir: Path, count: int, parts: int) -> Path:
             "Download Link": "",
             "Media Download Url": "",
         })
-    orphan = gradient((1080, 1080), *PALETTES[3], rng)
+    orphan = photos.frame((1080, 1080)) if photos else gradient((1080, 1080), *PALETTES[3], rng)
     orphan.save(memories_dir / "2022-11-04_ORPHANFILE01-main.jpg", "JPEG", quality=88)
 
     (work / "mydata" / "json" / "memories_history.json").write_text(
@@ -406,9 +441,13 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path.home() / "Desktop", help="where to write the ZIP (default: ~/Desktop)")
     ap.add_argument("--count", type=int, default=48, help="how many memories to generate (default: 48)")
     ap.add_argument("--parts", type=int, default=3, help="how many ZIPs to split it across, the way Snapchat does (default: 3)")
+    ap.add_argument("--photos", type=Path, help="folder of images to use instead of the generated art, for demo footage that looks like a real library")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    build(args.out, max(1, args.count), max(1, args.parts))
+    pool = PhotoPool(args.photos) if args.photos else None
+    if pool:
+        print(f"Using {len(pool.paths)} photo(s) from {args.photos}")
+    build(args.out, max(1, args.count), max(1, args.parts), pool)
 
 
 if __name__ == "__main__":
