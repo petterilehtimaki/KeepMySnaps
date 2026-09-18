@@ -5,6 +5,13 @@
  */
 import JSZip from "jszip";
 import {
+  BlobReader,
+  TextWriter,
+  Uint8ArrayWriter,
+  ZipReader,
+  configure,
+} from "@zip.js/zip.js";
+import {
   freeSelection,
   groupMediaFiles,
   matchEntriesToMedia,
@@ -20,6 +27,9 @@ import { writeExif, isJpeg } from "./exif";
 import { burnOverlayIntoVideo, canRewriteVideo } from "./video";
 import { drawCovering } from "./compose";
 import { stampMp4CreationTime } from "./mp4time";
+
+// Inflate in workers so a 2GB part doesn't freeze the tab it is being read in.
+configure({ useWebWorkers: true });
 
 export class NotASnapchatExport extends Error {}
 
@@ -70,7 +80,8 @@ export type Outcome = {
 };
 
 type SourceFile = {
-  zip: JSZip;
+  /** Reads this one entry off disk, when and only when it is needed. */
+  read: () => Promise<Uint8Array>;
   path: string;
 };
 
@@ -199,35 +210,48 @@ export async function processExport(
 
   report({ phase: "reading", done: 0, total: files.length, label: "Opening the ZIP" });
 
-  const zips: JSZip[] = [];
+  // Read the archives without loading them.
+  //
+  // A real library is several 2GB parts, and pulling each one into memory to
+  // look inside it is what makes a big export impossible rather than slow. A
+  // ZIP's index lives at its end, so this reads that index and nothing else,
+  // then pulls each photo off disk at the moment it is needed. Peak memory is
+  // one photo, whether the export is 20MB or 200GB.
+  const readers: ZipReader<unknown>[] = [];
   const unreadable: string[] = [];
   const mediaFiles: SourceFile[] = [];
   const entries: MemoryEntry[] = [];
 
   for (const [i, file] of files.entries()) {
     throwIfAborted(signal);
-    let zip: JSZip;
+    const reader = new ZipReader(new BlobReader(file));
+    let zipEntries;
     try {
-      zip = await JSZip.loadAsync(file);
+      zipEntries = await reader.getEntries();
     } catch {
       unreadable.push(file.name);
+      await reader.close().catch(() => {});
       continue;
     }
-    zips.push(zip);
+    readers.push(reader);
 
-    for (const path of Object.keys(zip.files)) {
-      const obj = zip.files[path];
-      if (obj.dir) continue;
+    for (const entry of zipEntries) {
+      if (entry.directory) continue;
+      const path = entry.filename;
 
       if (/memories_history\.json$/i.test(path)) {
-        const text = await obj.async("text");
         try {
+          const text = await entry.getData!(new TextWriter());
           entries.push(...parseMemoriesHistory(JSON.parse(text)));
         } catch {
-          // Malformed JSON: fall through to the "no memories" error below.
+          // Malformed JSON, or a part that read badly: fall through to the
+          // "no memories" error below.
         }
       } else if (isMediaPath(path) && !isThumbnailPath(path)) {
-        mediaFiles.push({ zip, path });
+        mediaFiles.push({
+          path,
+          read: () => entry.getData!(new Uint8ArrayWriter()),
+        });
       }
     }
 
@@ -239,7 +263,7 @@ export async function processExport(
     });
   }
 
-  if (!zips.length) {
+  if (!readers.length) {
     throw new NotASnapchatExport(
       unreadable.length === 1
         ? `${unreadable[0]} wouldn't open. If it's on iCloud Drive, wait for it to finish downloading, then try again.`
@@ -267,8 +291,8 @@ export async function processExport(
     label: "Matching memories to files",
   });
 
-  const zipForPath = new Map<string, JSZip>();
-  for (const m of mediaFiles) zipForPath.set(m.path, m.zip);
+  const readForPath = new Map<string, () => Promise<Uint8Array>>();
+  for (const m of mediaFiles) readForPath.set(m.path, m.read);
 
   const groups = groupMediaFiles(mediaFiles.map((m) => m.path));
   const pairings: Pairing[] = matchEntriesToMedia(entries, groups);
@@ -314,22 +338,17 @@ export async function processExport(
       label: `Restoring ${i + 1} of ${selected.length}`,
     });
 
-    const baseZip = zipForPath.get(group.base);
-    const baseObj = baseZip?.file(group.base);
-    if (!baseObj) continue;
+    const readBase = readForPath.get(group.base);
+    if (!readBase) continue;
 
     const ext = extensionOf(group.base);
     const isVideo = VIDEO_EXT.has(ext);
-    let bytes = new Uint8Array(await baseObj.async("arraybuffer")) as Uint8Array;
+    let bytes = await readBase();
     let outExt = ext;
 
     if (!isVideo) {
-      const overlayObj = group.overlay
-        ? (zipForPath.get(group.overlay)?.file(group.overlay) ?? null)
-        : null;
-      const overlayBytes = overlayObj
-        ? (new Uint8Array(await overlayObj.async("arraybuffer")) as Uint8Array)
-        : null;
+      const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
+      const overlayBytes = readOverlay ? await readOverlay() : null;
 
       // Flatten when there's an overlay, or when the base isn't a JPEG and so
       // can't carry EXIF as-is.
@@ -369,14 +388,10 @@ export async function processExport(
       // caption part of the file is to decode it, draw the overlay on every
       // frame and encode it again. If that can't be done, the PNG goes in a
       // folder of its own rather than being dropped.
-      const overlayObj = group.overlay
-        ? (zipForPath.get(group.overlay)?.file(group.overlay) ?? null)
-        : null;
+      const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
 
-      if (overlayObj) {
-        const overlayBytes = new Uint8Array(
-          await overlayObj.async("arraybuffer"),
-        ) as Uint8Array;
+      if (readOverlay) {
+        const overlayBytes = await readOverlay();
 
         let burned: Uint8Array | null = null;
         if (canRewriteVideo()) {
@@ -511,8 +526,9 @@ export async function processExport(
 
   report({ phase: "done", done: 100, total: 100, label: "Done" });
 
-  // Keep the loaded archives from pinning memory once we're finished.
-  zips.length = 0;
+  // Close the readers. They only ever held each ZIP's index, but a closed
+  // reader is one the browser can stop tracking.
+  await Promise.all(readers.map((r) => r.close().catch(() => {})));
 
   return { blob, summary };
 }

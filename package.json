@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",
+    "@zip.js/zip.js": "^2.15.0",
     "jszip": "^3.10.1",
     "mp4-muxer": "^5.2.2",
     "mp4box": "^2.4.1",
