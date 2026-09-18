@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { PRICE_CENTS, PRICE_CURRENCY, PRODUCT_NAME } from "@/lib/config";
+import { clientKey, rateLimit } from "@/lib/ratelimit";
 
 /**
  * Creates a one-off Stripe Checkout session and hands back its URL.
@@ -9,6 +10,16 @@ import { PRICE_CENTS, PRICE_CURRENCY, PRODUCT_NAME } from "@/lib/config";
  * thing crossing the wire is the fact that somebody clicked a button.
  */
 export async function POST(request: Request) {
+  // Twelve checkouts an hour is far more than anyone buying a $5 thing once,
+  // and far less than a loop can spend.
+  const limit = rateLimit(clientKey(request, "checkout"), 12, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "That's a lot of checkouts. Give it a minute." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
+
   const stripe = getStripe();
 
   if (!stripe) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStripe, looksLikeSessionId } from "@/lib/stripe";
 import { findUnlock, getAdminClient, recordUnlock } from "@/lib/unlocks";
 import { PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
+import { clientKey, rateLimit } from "@/lib/ratelimit";
 
 /**
  * Decides whether a Stripe Checkout session id represents a real payment.
@@ -12,6 +13,16 @@ import { PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
  * round trip to Stripe.
  */
 export async function POST(request: Request) {
+  // This one is checked on every page load by people who have paid, and it
+  // asks Stripe about a session id, so the ceiling is high but not absent.
+  const limit = rateLimit(clientKey(request, "unlock"), 120, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { status: "error" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
+
   let sessionId: unknown;
 
   try {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendContactMessage } from "@/lib/mail";
+import { clientKey, rateLimit } from "@/lib/ratelimit";
 
 /**
  * Takes a message from the contact form and forwards it.
@@ -22,6 +23,20 @@ function asString(value: unknown, max: number): string {
 }
 
 export async function POST(request: Request) {
+  // Every message here is an email sent from a real account with a monthly
+  // allowance. Five an hour covers somebody writing back twice with a
+  // screenshot; it doesn't cover a script.
+  const limit = rateLimit(clientKey(request, "contact"), 5, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "That's several messages in a row. Wait a bit, or reply to the last one.",
+      },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;

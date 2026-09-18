@@ -55,6 +55,15 @@ export class NotEnoughRoom extends UserFacingError {}
  */
 const MEMORY_ONLY_LIMIT = 1_500_000_000;
 
+/**
+ * The largest video a caption is drawn into rather than saved beside.
+ *
+ * Snapchat memories are seconds long and a few tens of megabytes; anything
+ * this size came from somewhere else, and re-encoding it costs several times
+ * its own size in memory.
+ */
+const VIDEO_BURN_LIMIT = 250_000_000;
+
 const gb = (bytes: number) =>
   bytes >= 1_000_000_000
     ? `${(bytes / 1_000_000_000).toFixed(1)} GB`
@@ -451,7 +460,14 @@ export async function processExport(
         const overlayBytes = await readOverlay();
 
         let burned: Uint8Array | null = null;
-        if (canRewriteVideo()) {
+        // Drawing a caption into a video means holding the source, the frames
+        // coming out of it and the finished file at once, so a long video is a
+        // memory spike at the worst possible moment. Past this size the
+        // caption is saved beside the video instead, which is the same
+        // fallback used for a browser that can't encode at all: a caption in a
+        // folder beats a run that dies at ninety percent.
+        const tooBigToBurn = bytes.length > VIDEO_BURN_LIMIT;
+        if (canRewriteVideo() && !tooBigToBurn) {
           report({
             phase: "fixing",
             done: i,
