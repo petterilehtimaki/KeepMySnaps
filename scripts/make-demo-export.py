@@ -163,8 +163,14 @@ class PhotoPool:
         self.paths = sorted(p for p in folder.iterdir() if p.suffix.lower() in self.SUFFIXES)
         if not self.paths:
             raise SystemExit(f"No images in {folder}. Looked for {', '.join(sorted(self.SUFFIXES))}.")
-        self.cursor = 0
         self._shape: dict[Path, bool] = {}
+        # Two queues, cycled independently. One shared cursor meant the search
+        # for a matching orientation consumed the images it skipped, so a
+        # library with plenty of photos still repeated some and never used
+        # others.
+        self.portrait = [p for p in self.paths if self._is_portrait(p)]
+        self.landscape = [p for p in self.paths if not self._is_portrait(p)]
+        self.at = {True: 0, False: 0}
 
     def _is_portrait(self, src: Path) -> bool:
         if src not in self._shape:
@@ -176,18 +182,16 @@ class PhotoPool:
         return self._shape[src]
 
     def frame(self, size: tuple[int, int]) -> Image.Image:
-        # Prefer a source of the same orientation as the frame being filled, so
-        # a landscape photo is not cropped to a phone-shaped sliver. Falls back
-        # to the next one along when the folder has none of that shape.
+        # Take from the queue matching the frame's orientation, so a landscape
+        # photo is never cropped to a phone-shaped sliver, and every photo gets
+        # used once before any of them is used twice.
         want_portrait = size[1] >= size[0]
-        for _ in range(len(self.paths)):
-            src = self.paths[self.cursor % len(self.paths)]
-            self.cursor += 1
-            if self._is_portrait(src) == want_portrait:
-                break
-        else:
-            src = self.paths[self.cursor % len(self.paths)]
-            self.cursor += 1
+        queue = self.portrait if want_portrait else self.landscape
+        if not queue:
+            queue = self.landscape if want_portrait else self.portrait
+            want_portrait = not want_portrait
+        src = queue[self.at[want_portrait] % len(queue)]
+        self.at[want_portrait] += 1
         try:
             img = Image.open(src).convert("RGB")
         except OSError as exc:  # HEIC without a plugin is the usual one
