@@ -73,6 +73,19 @@ SPLIT_STAMP = "1786724342212"
 # The name and the coordinates travel together deliberately: a geofilter
 # reading LOS ANGELES over a pin dropped in Finland is exactly the sort of
 # detail that gives a demo away the moment someone opens the map view.
+# A geofilter is usually the city, but plenty of them name a venue with the
+# town underneath, which is why the second element can be a subtitle.
+VENUES = [
+    ("THE FRONT ROOM", "Austin, Texas"),
+    ("PIER 39", "San Francisco, California"),
+    ("LAKESIDE DINER", "Denver, Colorado"),
+    ("UNION STATION", "Chicago, Illinois"),
+]
+
+# Emoji and temperature stickers land in the same overlay layer as the caption.
+EMOJI = ["\U0001f918", "\U0001f525", "\U0001f602", "\u2744\ufe0f", "\U0001f430"]
+TEMPERATURES = ["-32°C", "-7°C", "1°C", "24°C", "31°C"]
+
 PLACES = [
     ("LOS ANGELES", 34.05223, -118.24368),
     ("SAN FRANCISCO", 37.77493, -122.41942),
@@ -150,10 +163,30 @@ class PhotoPool:
         if not self.paths:
             raise SystemExit(f"No images in {folder}. Looked for {', '.join(sorted(self.SUFFIXES))}.")
         self.cursor = 0
+        self._shape: dict[Path, bool] = {}
+
+    def _is_portrait(self, src: Path) -> bool:
+        if src not in self._shape:
+            try:
+                with Image.open(src) as im:
+                    self._shape[src] = im.height >= im.width
+            except OSError:
+                self._shape[src] = True
+        return self._shape[src]
 
     def frame(self, size: tuple[int, int]) -> Image.Image:
-        src = self.paths[self.cursor % len(self.paths)]
-        self.cursor += 1
+        # Prefer a source of the same orientation as the frame being filled, so
+        # a landscape photo is not cropped to a phone-shaped sliver. Falls back
+        # to the next one along when the folder has none of that shape.
+        want_portrait = size[1] >= size[0]
+        for _ in range(len(self.paths)):
+            src = self.paths[self.cursor % len(self.paths)]
+            self.cursor += 1
+            if self._is_portrait(src) == want_portrait:
+                break
+        else:
+            src = self.paths[self.cursor % len(self.paths)]
+            self.cursor += 1
         try:
             img = Image.open(src).convert("RGB")
         except OSError as exc:  # HEIC without a plugin is the usual one
@@ -179,7 +212,14 @@ def load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
-def overlay_png(size: tuple[int, int], text: str, place: str | None = None) -> bytes:
+def overlay_png(
+    size: tuple[int, int],
+    text: str,
+    place: str | None = None,
+    subtitle: str | None = None,
+    temperature: str | None = None,
+    emoji: str | None = None,
+) -> bytes:
     """
     The overlay layer: transparent everywhere except what was drawn on top.
 
@@ -208,8 +248,16 @@ def overlay_png(size: tuple[int, int], text: str, place: str | None = None) -> b
         # A geofilter: the place name across the frame, no bar behind it, with
         # a rule above and below. No box to hide behind means the shadow is
         # what keeps it readable over a bright photo — same as the real ones.
-        gf = load_font(max(26, w // 11))
         spaced = " ".join(place)
+        # Letter-spacing makes a long venue name wider than the frame, so drop
+        # the size until it fits rather than letting it run off both edges.
+        gf_size = max(26, w // 11)
+        while gf_size > 14:
+            gf = load_font(gf_size)
+            box = pen.textbbox((0, 0), spaced, font=gf)
+            if box[2] - box[0] <= w - 60:
+                break
+            gf_size -= 2
         box = pen.textbbox((0, 0), spaced, font=gf)
         tw, th = box[2] - box[0], box[3] - box[1]
         y = int(h * 0.80)
@@ -221,6 +269,37 @@ def overlay_png(size: tuple[int, int], text: str, place: str | None = None) -> b
         rx = (w - rule_w) / 2
         pen.rectangle((rx, y - th * 0.55, rx + rule_w, y - th * 0.55 + 3), fill=(255, 255, 255, 200))
         pen.rectangle((rx, y + th * 1.35, rx + rule_w, y + th * 1.35 + 3), fill=(255, 255, 255, 200))
+
+    if subtitle:
+        # The town under a venue filter, small and unspaced.
+        sf = load_font(max(16, w // 26))
+        box = pen.textbbox((0, 0), subtitle, font=sf)
+        sx = (w - (box[2] - box[0])) / 2 - box[0]
+        sy = int(h * 0.80) + int(h * 0.055)
+        for dx, dy in ((1, 1), (-1, 1)):
+            pen.text((sx + dx, sy + dy - box[1]), subtitle, font=sf, fill=(0, 0, 0, 90))
+        pen.text((sx, sy - box[1]), subtitle, font=sf, fill=(255, 255, 255, 235))
+
+    if temperature:
+        # Temperature sticker, top left, the way the weather filter sits.
+        tf = load_font(max(30, w // 9))
+        box = pen.textbbox((0, 0), temperature, font=tf)
+        tx, ty = int(w * 0.07), int(h * 0.08)
+        for dx, dy in ((2, 2), (-2, 2), (2, -2), (-2, -2)):
+            pen.text((tx + dx, ty + dy - box[1]), temperature, font=tf, fill=(0, 0, 0, 80))
+        pen.text((tx, ty - box[1]), temperature, font=tf, fill=(255, 255, 255, 245))
+
+    if emoji:
+        # Apple Color Emoji only renders at 160px, so draw it big and scale.
+        try:
+            ef = ImageFont.truetype("/System/Library/Fonts/Apple Color Emoji.ttc", 160)
+            sticker = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+            ImageDraw.Draw(sticker).text((10, 10), emoji, font=ef, embedded_color=True)
+            side = max(90, w // 4)
+            sticker = sticker.resize((side, side), Image.LANCZOS)
+            img.alpha_composite(sticker, (int(w * 0.62), int(h * 0.30)))
+        except (OSError, ValueError):
+            pass  # No colour emoji font: the rest of the overlay still stands.
 
     out = BytesIO()
     img.save(out, "PNG")
@@ -345,14 +424,29 @@ def build(out_dir: Path, count: int, parts: int, photos: PhotoPool | None = None
 
         caption = None
         geofilter = None
+        subtitle = None
+        temperature = None
+        emoji = None
         if rng.random() < 0.62:
             caption = CAPTIONS[(index * 7) % len(CAPTIONS)]
-        # Name the city the coordinates already put this memory in.
+        # Name the city the coordinates already put this memory in. Some of
+        # those are venue filters instead, with the town on a second line.
         if place and rng.random() < 0.34:
-            geofilter = place[0]
-        if caption or geofilter:
+            if rng.random() < 0.3:
+                geofilter, subtitle = VENUES[rng.randrange(len(VENUES))]
+            else:
+                geofilter = place[0]
+        if rng.random() < 0.12:
+            temperature = TEMPERATURES[rng.randrange(len(TEMPERATURES))]
+        if rng.random() < 0.18:
+            emoji = EMOJI[rng.randrange(len(EMOJI))]
+            # An emoji on its own is a real and annoying case: an overlay with
+            # no text at all, which still has to be put back.
+            if rng.random() < 0.4:
+                caption = None
+        if caption or geofilter or temperature or emoji:
             (memories_dir / f"{stem}-overlay.png").write_bytes(
-                overlay_png(size, caption or "", geofilter)
+                overlay_png(size, caption or "", geofilter, subtitle, temperature, emoji)
             )
 
         # Thumbnails exist in real exports and must be ignored, so ship some.
