@@ -337,6 +337,14 @@ function Result({
         <p className="text-[1.0625rem] font-bold tracking-[-0.015em]">
           {summary.filesWritten} memories, back in order
         </p>
+
+        {summary.unreadable.length > 0 && (
+          <p className="mx-auto mt-3 max-w-[46ch] text-[0.875rem] leading-[1.6] font-semibold text-ink">
+            {summary.unreadable.length === 1
+              ? `${summary.unreadable[0]} wouldn't open, so anything in it is missing here. Drop it on its own to try again.`
+              : `${summary.unreadable.length} of your ZIPs wouldn't open (${summary.unreadable.join(", ")}), so anything in them is missing here. Drop those again to add them.`}
+          </p>
+        )}
         <p className="mx-auto mt-2 max-w-[46ch] text-[0.875rem] leading-[1.6] text-muted-cool">
           {summary.videos > 0
             ? `Including ${summary.videos} ${summary.videos === 1 ? "video" : "videos"}. Each one carries its capture time inside the file, which is where photo apps look for a video's date.`

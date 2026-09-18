@@ -50,6 +50,15 @@ export type Summary = {
   unmatched: number;
   /** Files present in the export beyond the ones written to this ZIP. */
   withheld: number;
+  /**
+   * ZIPs the browser couldn't read, by name.
+   *
+   * A file that fails to open is usually the browser, not the archive: a drop
+   * whose handle went stale, a file still syncing from iCloud, a flaky read.
+   * One bad part used to fail the whole run, which is the wrong trade when
+   * six of the seven opened fine and the JSON is in one of those.
+   */
+  unreadable: string[];
 };
 
 export type Outcome = {
@@ -188,6 +197,7 @@ export async function processExport(
   report({ phase: "reading", done: 0, total: files.length, label: "Opening the ZIP" });
 
   const zips: JSZip[] = [];
+  const unreadable: string[] = [];
   const mediaFiles: SourceFile[] = [];
   const entries: MemoryEntry[] = [];
 
@@ -197,7 +207,8 @@ export async function processExport(
     try {
       zip = await JSZip.loadAsync(file);
     } catch {
-      throw new NotASnapchatExport(`${file.name} isn't a ZIP we can open.`);
+      unreadable.push(file.name);
+      continue;
     }
     zips.push(zip);
 
@@ -225,9 +236,19 @@ export async function processExport(
     });
   }
 
+  if (!zips.length) {
+    throw new NotASnapchatExport(
+      unreadable.length === 1
+        ? `${unreadable[0]} wouldn't open. If it's on iCloud Drive, wait for it to finish downloading, then try again.`
+        : "None of those would open. If they're on iCloud Drive, wait for them to finish downloading, then try again.",
+    );
+  }
+
   if (!entries.length) {
     throw new NotASnapchatExport(
-      "No memories_history.json in there. That's not a Snapchat export ZIP.",
+      unreadable.length
+        ? `No memories_history.json in the parts that opened, and ${unreadable.join(", ")} wouldn't open. That list only lives in one part, so try those again.`
+        : "No memories_history.json in there. That's not a Snapchat export ZIP.",
     );
   }
   if (!mediaFiles.length) {
@@ -276,6 +297,7 @@ export async function processExport(
     videoCaptionsKept: 0,
     unmatched: pairings.filter((p) => !p.entry).length,
     withheld: Math.max(0, pairings.length - selected.length),
+    unreadable,
   };
 
   for (const [i, pairing] of selected.entries()) {
