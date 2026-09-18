@@ -406,3 +406,29 @@ export function matchEntriesToMedia(
 
   return groups.map((g) => pairings.get(g.key)!);
 }
+
+/**
+ * The memories a free run is allowed to fix.
+ *
+ * Chosen from the JSON rather than from whichever files were dropped, because
+ * memories_history.json is identical in every part of an export: the same
+ * oldest `limit` memories come out whichever ZIPs are given, however often the
+ * page is reloaded, and whichever parts are held back. Selecting from the
+ * files present instead would hand somebody a fresh free batch for every
+ * combination of parts they tried.
+ *
+ * Pairings with no entry are never free: without a JSON entry there is no date
+ * to put back, so there is nothing to preview.
+ */
+export function freeSelection(
+  entries: MemoryEntry[],
+  pairings: Pairing[],
+  limit: number,
+): Pairing[] {
+  const free = new Set(
+    [...entries]
+      .sort((a, b) => (a.takenAt ?? Infinity) - (b.takenAt ?? Infinity))
+      .slice(0, limit),
+  );
+  return pairings.filter((p) => p.entry && free.has(p.entry)).slice(0, limit);
+}
