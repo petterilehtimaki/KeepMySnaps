@@ -20,7 +20,7 @@ type State =
   /** Free run already spent in this tab. `count` is how many ZIPs were offered. */
   | { kind: "locked"; count: number }
   | { kind: "working"; progress: Progress }
-  | { kind: "done"; summary: Summary; url: string }
+  | { kind: "done"; summary: Summary; url: string | null; savedAs: string | null }
   | { kind: "error"; message: string };
 
 export default function Uploader() {
@@ -111,6 +111,42 @@ export default function Uploader() {
         urlRef.current = null;
       }
 
+      // Ask where the finished ZIP should go before a single byte is read.
+      //
+      // Asked here rather than at the end because the answer decides where
+      // the bytes are written as they are made. The old path had no answer to
+      // give: it filled the browser's own storage, which is rationed at a few
+      // gigabytes, and a real library was turned away before it started on a
+      // machine with four times the room it needed. Writing to a file someone
+      // picked has no such ceiling, and the archive exists once instead of
+      // twice.
+      //
+      // The click that got us here is still fresh, which is what lets this
+      // dialog open at all.
+      let saveTo: FileSystemFileHandle | null = null;
+      if (typeof showSaveFilePicker === "function") {
+        try {
+          saveTo = await showSaveFilePicker({
+            suggestedName: "keepmysnaps.zip",
+            types: [
+              {
+                description: "ZIP archive",
+                accept: { "application/zip": [".zip"] },
+              },
+            ],
+          });
+        } catch (err) {
+          // Closing the dialog is a change of mind, not a failure.
+          if (err instanceof DOMException && err.name === "AbortError") {
+            setState({ kind: "idle" });
+            return;
+          }
+          // Anything else, a policy or a frame that isn't allowed to ask,
+          // falls through to the in-browser path rather than stopping.
+          saveTo = null;
+        }
+      }
+
       const controller = new AbortController();
       abortRef.current = controller;
 
@@ -129,9 +165,10 @@ export default function Uploader() {
           limit: isUnlocked ? null : FREE_FILE_LIMIT,
           signal: controller.signal,
           onProgress: (progress) => setState({ kind: "working", progress }),
+          saveTo,
         });
 
-        const url = URL.createObjectURL(blob);
+        const url = blob ? URL.createObjectURL(blob) : null;
         urlRef.current = url;
 
         // Spent only once a run actually finishes. Dropping the wrong file
@@ -141,7 +178,7 @@ export default function Uploader() {
           setFreeRunUsed(true);
         }
 
-        setState({ kind: "done", summary, url });
+        setState({ kind: "done", summary, url, savedAs: saveTo?.name ?? null });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           setState({ kind: "idle" });
@@ -309,6 +346,7 @@ export default function Uploader() {
           <Result
             summary={state.summary}
             url={state.url}
+            savedAs={state.savedAs}
             unlocked={unlocked}
             onReset={() => {
               if (urlRef.current) {
@@ -328,11 +366,14 @@ export default function Uploader() {
 function Result({
   summary,
   url,
+  savedAs,
   unlocked,
   onReset,
 }: {
   summary: Summary;
-  url: string;
+  /** Null when the archive was written straight to disk and needs no download. */
+  url: string | null;
+  savedAs: string | null;
   unlocked: boolean;
   onReset: () => void;
 }) {
@@ -402,13 +443,26 @@ function Result({
       </div>
 
       <div className="mt-11 flex flex-col items-center gap-3">
-        <a
-          href={url}
-          download="keepmysnaps.zip"
-          className="inline-flex h-12 w-full items-center justify-center rounded-[6px] bg-blue px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-blue-deep sm:w-auto"
-        >
-          Download the ZIP
-        </a>
+        {url ? (
+          <a
+            href={url}
+            download="keepmysnaps.zip"
+            className="inline-flex h-12 w-full items-center justify-center rounded-[6px] bg-blue px-6 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-blue-deep sm:w-auto"
+          >
+            Download the ZIP
+          </a>
+        ) : (
+          // Written as it was made, so there is nothing to hand over. Saying
+          // so beats a download button that would copy a library a second
+          // time for no reason.
+          <p className="mx-auto max-w-[46ch] text-center text-[0.9375rem] leading-[1.6] text-muted-cool">
+            Saved to{" "}
+            <span className="font-semibold text-ink">
+              {savedAs ?? "the file you picked"}
+            </span>
+            , written as it was made. It is on your disk already.
+          </p>
+        )}
         <button
           type="button"
           onClick={onReset}
