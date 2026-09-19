@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStripe } from "@/lib/stripe";
+import { createCheckoutSession, stripeIsConfigured } from "@/lib/stripe";
 import { PRICE_CENTS, PRICE_CURRENCY, PRODUCT_NAME } from "@/lib/config";
 import { clientKey, rateLimit } from "@/lib/ratelimit";
 
@@ -20,9 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const stripe = getStripe();
-
-  if (!stripe) {
+  if (!stripeIsConfigured()) {
     return NextResponse.json(
       { error: "Payments aren't configured on this deployment." },
       { status: 503 },
@@ -32,7 +30,7 @@ export async function POST(request: Request) {
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await createCheckoutSession({
       mode: "payment",
       // So a purchase can be found again by the address that made it. Without
       // a customer record a guest checkout is only reachable by session id,

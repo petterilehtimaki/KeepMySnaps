@@ -24,8 +24,7 @@
     "piexifjs": "^1.0.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "server-only": "0.0.1",
-    "stripe": "22.4.0"
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.6",
