@@ -47,4 +47,3 @@ next-env.d.ts
 .wrangler/
 .dev.vars
 .DS_Store
-HANDOFF.md
