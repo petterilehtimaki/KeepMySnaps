@@ -9,6 +9,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Both hostnames point at this worker. The bare domain only ever gets a 301
+  // to www from the middleware; it is attached here so that redirect happens
+  // at all, rather than the domain answering nothing.
+  "routes": [
+    { "pattern": "www.keepmysnaps.com", "custom_domain": true },
+    { "pattern": "keepmysnaps.com", "custom_domain": true }
+  ],
   "observability": {
     "enabled": true
   }

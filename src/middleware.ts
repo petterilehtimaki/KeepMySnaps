@@ -18,14 +18,25 @@ const CANONICAL_HOST = new URL(SITE_URL).host;
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
+  const bareDomain = host === "keepmysnaps.com";
 
-  // Leave anything that isn't the bare production domain alone: previews, the
-  // workers.dev URL and localhost all have to keep working as themselves.
-  if (host !== "keepmysnaps.com") return NextResponse.next();
+  // What the visitor actually typed. On Workers the scheme survives on the
+  // request URL; behind a proxy that rewrites it, the headers are the fallback.
+  const visitor = request.headers.get("cf-visitor") ?? "";
+  const forwarded = request.headers.get("x-forwarded-proto");
+  const proto = request.nextUrl.protocol.replace(":", "");
+  const insecure =
+    (proto === "http" ||
+      forwarded === "http" ||
+      /"scheme"\s*:\s*"http"/.test(visitor)) &&
+    (bareDomain || host === CANONICAL_HOST);
+
+  // Previews, the workers.dev URL and localhost keep answering as themselves.
+  if (!bareDomain && !insecure) return NextResponse.next();
 
   const url = new URL(request.url);
   url.protocol = "https:";
-  url.host = CANONICAL_HOST;
+  if (bareDomain) url.host = CANONICAL_HOST;
   url.port = "";
 
   return NextResponse.redirect(url, 301);
