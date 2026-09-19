@@ -111,7 +111,12 @@ export type Summary = {
 };
 
 export type Outcome = {
-  blob: Blob;
+  /**
+   * The finished archive, when it was built inside the browser and still has
+   * to be handed over. Null when it went straight into a file the person
+   * picked: there is nothing left to download, it is already saved.
+   */
+  blob: Blob | null;
   summary: Summary;
 };
 
@@ -239,13 +244,20 @@ export async function processExport(
     limit: number | null;
     onProgress?: (p: Progress) => void;
     signal?: AbortSignal;
+    /**
+     * A file on the real disk, chosen by the person before the run started.
+     * Given one, the bytes go straight there and never occupy the browser's
+     * own storage, which is the only way a library larger than the browser's
+     * quota can finish at all.
+     */
+    saveTo?: FileSystemFileHandle | null;
   },
 ): Promise<Outcome> {
-  const { limit, onProgress, signal } = options;
+  const { limit, onProgress, signal, saveTo } = options;
   const report = (p: Progress) => onProgress?.(p);
 
   const inputBytes = files.reduce((total, f) => total + f.size, 0);
-  await preflight(inputBytes);
+  await preflight(inputBytes, saveTo ?? null);
 
   report({ phase: "reading", done: 0, total: files.length, label: "Opening the ZIP" });
 
@@ -350,251 +362,262 @@ export async function processExport(
   // writer does zip64, and streams into the browser's own storage so nothing
   // is held in memory. `level: 0` is store, since photos and video are already
   // compressed and deflating them again costs minutes to save nothing.
-  const sink = await openOutputSink();
-  // zip64 only where it is needed. Past 4GB or 65,535 files a plain ZIP cannot
-  // describe itself and comes out malformed, which is the case this tool has
-  // to survive; below that, a plain ZIP is what every unarchiver on earth
-  // opens without thinking about it.
-  const out = new ZipWriter(sink.writable, {
-    zip64: inputBytes > 3_000_000_000 || mediaFiles.length > 60_000,
-    level: 0,
-  });
-  const folder = {
-    file: (
-      name: string,
-      data: Uint8Array | string,
-      opts?: { date?: Date },
-    ) =>
-      out.add(
-        `KeepMySnaps/${name}`,
-        typeof data === "string"
-          ? new TextReader(data)
-          : new Uint8ArrayReader(data),
-        { lastModDate: opts?.date },
-      ),
-  };
-  const used = new Set<string>();
-  const usedCaptions = new Set<string>();
-  const csv: string[] = [
-    "filename,taken_at_utc,latitude,longitude,location_precision,source_file",
-  ];
+  const sink = await openOutputSink(saveTo ?? null);
 
-  const summary: Summary = {
-    totalMemories: entries.length,
-    filesWritten: 0,
-    datesRestored: 0,
-    gpsRestored: 0,
-    overlaysMerged: 0,
-    videos: 0,
-    videoCaptionsBurned: 0,
-    videoCaptionsKept: 0,
-    unmatched: pairings.filter((p) => !p.entry).length,
-    withheld: Math.max(0, pairings.length - selected.length),
-    unreadable,
-  };
-
-  for (const [i, pairing] of selected.entries()) {
-    throwIfAborted(signal);
-    const { entry, group } = pairing;
-
-    report({
-      phase: "fixing",
-      done: i,
-      total: selected.length,
-      label: `Restoring ${i + 1} of ${selected.length}`,
+  // From here on there is a half-written archive in the world. A Stop, or
+  // anything unexpected, would otherwise abandon it: a browser keeps an
+  // unfinished write as a scratch file beside the destination, sized like
+  // whatever got through before it stopped. Nobody asked for a hidden 12GB
+  // file next to their photos, so the stream is torn down on the way out.
+  try {
+    // zip64 only where it is needed. Past 4GB or 65,535 files a plain ZIP cannot
+    // describe itself and comes out malformed, which is the case this tool has
+    // to survive; below that, a plain ZIP is what every unarchiver on earth
+    // opens without thinking about it.
+    const out = new ZipWriter(sink.writable, {
+      zip64: inputBytes > 3_000_000_000 || mediaFiles.length > 60_000,
+      level: 0,
     });
+    const folder = {
+      file: (
+        name: string,
+        data: Uint8Array | string,
+        opts?: { date?: Date },
+      ) =>
+        out.add(
+          `KeepMySnaps/${name}`,
+          typeof data === "string"
+            ? new TextReader(data)
+            : new Uint8ArrayReader(data),
+          { lastModDate: opts?.date },
+        ),
+    };
+    const used = new Set<string>();
+    const usedCaptions = new Set<string>();
+    const csv: string[] = [
+      "filename,taken_at_utc,latitude,longitude,location_precision,source_file",
+    ];
 
-    const readBase = readForPath.get(group.base);
-    if (!readBase) continue;
+    const summary: Summary = {
+      totalMemories: entries.length,
+      filesWritten: 0,
+      datesRestored: 0,
+      gpsRestored: 0,
+      overlaysMerged: 0,
+      videos: 0,
+      videoCaptionsBurned: 0,
+      videoCaptionsKept: 0,
+      unmatched: pairings.filter((p) => !p.entry).length,
+      withheld: Math.max(0, pairings.length - selected.length),
+      unreadable,
+    };
 
-    const ext = extensionOf(group.base);
-    const isVideo = VIDEO_EXT.has(ext);
-    let bytes = await readBase();
-    let outExt = ext;
+    for (const [i, pairing] of selected.entries()) {
+      throwIfAborted(signal);
+      const { entry, group } = pairing;
 
-    if (!isVideo) {
-      const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
-      const overlayBytes = readOverlay ? await readOverlay() : null;
+      report({
+        phase: "fixing",
+        done: i,
+        total: selected.length,
+        label: `Restoring ${i + 1} of ${selected.length}`,
+      });
 
-      // Flatten when there's an overlay, or when the base isn't a JPEG and so
-      // can't carry EXIF as-is.
-      if (overlayBytes || !isJpeg(bytes)) {
-        try {
-          bytes = await flatten(bytes, ext, overlayBytes);
-          outExt = "jpg";
-          if (overlayBytes) summary.overlaysMerged++;
-        } catch {
-          // Keep the original bytes if the browser can't decode it.
-        }
-      }
+      const readBase = readForPath.get(group.base);
+      if (!readBase) continue;
 
-      if (entry) {
-        // Snapchat's JSON has no id to join on, so within a day the files
-        // are interchangeable. `location` is what the matcher could stand
-        // behind: this memory's own coordinates, or the centre of the ones it
-        // couldn't be told apart from, or nothing.
-        bytes = writeExif(bytes, {
-          takenAt: entry.takenAt,
-          lat: pairing.location?.lat ?? null,
-          lon: pairing.location?.lon ?? null,
-          caption: entry.caption,
-        });
-      }
-    } else {
-      summary.videos++;
+      const ext = extensionOf(group.base);
+      const isVideo = VIDEO_EXT.has(ext);
+      let bytes = await readBase();
+      let outExt = ext;
 
-      // A video has no EXIF, but its headers carry a creation time, and that
-      // is what Photos, iCloud and Google Photos read. Snapchat usually fills
-      // it in correctly; writing the entry's time anyway means every file on
-      // the way out agrees with the index, rather than trusting two sources.
-      if (entry?.takenAt != null) stampMp4CreationTime(bytes, entry.takenAt);
+      if (!isVideo) {
+        const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
+        const overlayBytes = readOverlay ? await readOverlay() : null;
 
-      // Two thirds of the captions in a real export belong to videos, and a
-      // video has nowhere to keep a picture — so the only way to make the
-      // caption part of the file is to decode it, draw the overlay on every
-      // frame and encode it again. If that can't be done, the PNG goes in a
-      // folder of its own rather than being dropped.
-      const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
-
-      if (readOverlay) {
-        const overlayBytes = await readOverlay();
-
-        let burned: Uint8Array | null = null;
-        // Drawing a caption into a video means holding the source, the frames
-        // coming out of it and the finished file at once, so a long video is a
-        // memory spike at the worst possible moment. Past this size the
-        // caption is saved beside the video instead, which is the same
-        // fallback used for a browser that can't encode at all: a caption in a
-        // folder beats a run that dies at ninety percent.
-        const tooBigToBurn = bytes.length > VIDEO_BURN_LIMIT;
-        if (canRewriteVideo() && !tooBigToBurn) {
-          report({
-            phase: "fixing",
-            done: i,
-            total: selected.length,
-            label: `Drawing caption into video ${summary.videos}`,
-          });
-          let bitmap: ImageBitmap | null = null;
+        // Flatten when there's an overlay, or when the base isn't a JPEG and so
+        // can't carry EXIF as-is.
+        if (overlayBytes || !isJpeg(bytes)) {
           try {
-            bitmap = await decode(overlayBytes, "image/png");
-            burned = await burnOverlayIntoVideo(bytes, bitmap, signal, entry?.takenAt ?? null);
+            bytes = await flatten(bytes, ext, overlayBytes);
+            outExt = "jpg";
+            if (overlayBytes) summary.overlaysMerged++;
           } catch {
-            burned = null;
-          } finally {
-            bitmap?.close();
+            // Keep the original bytes if the browser can't decode it.
           }
         }
 
-        if (burned) {
-          bytes = burned;
-          outExt = "mp4";
-          summary.videoCaptionsBurned++;
-        } else {
-          await folder.file(
-            `captions/${outputName(entry, "png", i, usedCaptions).replace(
-              /\.png$/,
-              "-caption.png",
-            )}`,
-            overlayBytes,
-            { date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined },
-          );
-          summary.videoCaptionsKept++;
+        if (entry) {
+          // Snapchat's JSON has no id to join on, so within a day the files
+          // are interchangeable. `location` is what the matcher could stand
+          // behind: this memory's own coordinates, or the centre of the ones it
+          // couldn't be told apart from, or nothing.
+          bytes = writeExif(bytes, {
+            takenAt: entry.takenAt,
+            lat: pairing.location?.lat ?? null,
+            lon: pairing.location?.lon ?? null,
+            caption: entry.caption,
+          });
+        }
+      } else {
+        summary.videos++;
+
+        // A video has no EXIF, but its headers carry a creation time, and that
+        // is what Photos, iCloud and Google Photos read. Snapchat usually fills
+        // it in correctly; writing the entry's time anyway means every file on
+        // the way out agrees with the index, rather than trusting two sources.
+        if (entry?.takenAt != null) stampMp4CreationTime(bytes, entry.takenAt);
+
+        // Two thirds of the captions in a real export belong to videos, and a
+        // video has nowhere to keep a picture — so the only way to make the
+        // caption part of the file is to decode it, draw the overlay on every
+        // frame and encode it again. If that can't be done, the PNG goes in a
+        // folder of its own rather than being dropped.
+        const readOverlay = group.overlay ? readForPath.get(group.overlay) : null;
+
+        if (readOverlay) {
+          const overlayBytes = await readOverlay();
+
+          let burned: Uint8Array | null = null;
+          // Drawing a caption into a video means holding the source, the frames
+          // coming out of it and the finished file at once, so a long video is a
+          // memory spike at the worst possible moment. Past this size the
+          // caption is saved beside the video instead, which is the same
+          // fallback used for a browser that can't encode at all: a caption in a
+          // folder beats a run that dies at ninety percent.
+          const tooBigToBurn = bytes.length > VIDEO_BURN_LIMIT;
+          if (canRewriteVideo() && !tooBigToBurn) {
+            report({
+              phase: "fixing",
+              done: i,
+              total: selected.length,
+              label: `Drawing caption into video ${summary.videos}`,
+            });
+            let bitmap: ImageBitmap | null = null;
+            try {
+              bitmap = await decode(overlayBytes, "image/png");
+              burned = await burnOverlayIntoVideo(bytes, bitmap, signal, entry?.takenAt ?? null);
+            } catch {
+              burned = null;
+            } finally {
+              bitmap?.close();
+            }
+          }
+
+          if (burned) {
+            bytes = burned;
+            outExt = "mp4";
+            summary.videoCaptionsBurned++;
+          } else {
+            await folder.file(
+              `captions/${outputName(entry, "png", i, usedCaptions).replace(
+                /\.png$/,
+                "-caption.png",
+              )}`,
+              overlayBytes,
+              { date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined },
+            );
+            summary.videoCaptionsKept++;
+          }
         }
       }
+
+      const name = outputName(entry, outExt, i, used);
+      // Video EXIF isn't a thing, so the file's own timestamp carries the date.
+      await folder.file(name, bytes, {
+        date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined,
+      });
+
+      if (entry?.takenAt != null) summary.datesRestored++;
+      if (pairing.location) summary.gpsRestored++;
+      summary.filesWritten++;
+
+      csv.push(
+        [
+          csvCell(name),
+          csvCell(entry?.takenAt != null ? new Date(entry.takenAt).toISOString() : null),
+          // The CSV mirrors what actually went into the files, so a blank here
+          // means "Snapchat couldn't tell us", not "we forgot". The precision
+          // column says whether the pin is this memory's own.
+          csvCell(pairing.location?.lat ?? null),
+          csvCell(pairing.location?.lon ?? null),
+          pairing.location ? (pairing.location.exact ? "exact" : "approximate") : "",
+          csvCell(group.base),
+        ].join(","),
+      );
     }
 
-    const name = outputName(entry, outExt, i, used);
-    // Video EXIF isn't a thing, so the file's own timestamp carries the date.
-    await folder.file(name, bytes, {
-      date: entry?.takenAt != null ? new Date(entry.takenAt) : undefined,
+    await folder.file("keepmysnaps-index.csv", csv.join("\n"));
+    await folder.file(
+      "README.txt",
+      [
+        "Your memories, with their real dates and locations put back.",
+        "",
+        `Files in here: ${summary.filesWritten}`,
+        `Dates restored: ${summary.datesRestored}`,
+        `Locations restored: ${summary.gpsRestored}`,
+        `Captions flattened onto photos: ${summary.overlaysMerged}`,
+        ...(summary.videoCaptionsBurned
+          ? [`Captions drawn into videos: ${summary.videoCaptionsBurned}`]
+          : []),
+        ...(summary.videoCaptionsKept
+          ? [`Captions saved beside videos: ${summary.videoCaptionsKept}`]
+          : []),
+        `Videos (capture time written into the file): ${summary.videos}`,
+        "",
+        "About the locations",
+        "",
+        "Snapchat's export doesn't say which photo goes with which entry in its",
+        "list, so when several memories share a day we can't always tell them",
+        "apart. Those get the centre of where that day's memories were, marked",
+        "\"approximate\" in the CSV. Where the day was spread too far for a centre",
+        "to mean anything, the location is left out rather than guessed at: a",
+        "pin in the wrong place looks exactly like a pin in the right one.",
+        "",
+        ...(summary.videoCaptionsKept
+          ? [
+              "About the captions folder",
+              "",
+              "Snapchat ships a video's caption as a separate transparent PNG.",
+              "Most are drawn back into the video itself. These ones couldn't be",
+              "(either this browser has no video encoder, or the file wasn't one",
+              "it would take), so they're in the captions/ folder, named to match",
+              "their video, rather than lost.",
+              "",
+            ]
+          : []),
+        "Photos carry EXIF DateTimeOriginal and GPS, so Google Photos, Apple",
+        "Photos, Immich and everything else will file them under the day they",
+        "actually happened.",
+        "",
+        "keepmysnaps-index.csv has the same data as plain text, in case you want",
+        "to do something else with it.",
+        "",
+        "Not affiliated with Snapchat or Snap Inc.",
+      ].join("\n"),
+    );
+
+    report({
+      phase: "packing",
+      done: selected.length,
+      total: selected.length,
+      label: "Packing your ZIP",
     });
 
-    if (entry?.takenAt != null) summary.datesRestored++;
-    if (pairing.location) summary.gpsRestored++;
-    summary.filesWritten++;
+    await out.close();
+    const blob = await sink.finish();
 
-    csv.push(
-      [
-        csvCell(name),
-        csvCell(entry?.takenAt != null ? new Date(entry.takenAt).toISOString() : null),
-        // The CSV mirrors what actually went into the files, so a blank here
-        // means "Snapchat couldn't tell us", not "we forgot". The precision
-        // column says whether the pin is this memory's own.
-        csvCell(pairing.location?.lat ?? null),
-        csvCell(pairing.location?.lon ?? null),
-        pairing.location ? (pairing.location.exact ? "exact" : "approximate") : "",
-        csvCell(group.base),
-      ].join(","),
-    );
+    report({ phase: "done", done: 100, total: 100, label: "Done" });
+
+    // Close the readers. They only ever held each ZIP's index, but a closed
+    // reader is one the browser can stop tracking.
+    await Promise.all(readers.map((r) => r.close().catch(() => {})));
+
+    return { blob, summary };
+  } catch (err) {
+    await sink.abort().catch(() => {});
+    throw err;
   }
-
-  await folder.file("keepmysnaps-index.csv", csv.join("\n"));
-  await folder.file(
-    "README.txt",
-    [
-      "Your memories, with their real dates and locations put back.",
-      "",
-      `Files in here: ${summary.filesWritten}`,
-      `Dates restored: ${summary.datesRestored}`,
-      `Locations restored: ${summary.gpsRestored}`,
-      `Captions flattened onto photos: ${summary.overlaysMerged}`,
-      ...(summary.videoCaptionsBurned
-        ? [`Captions drawn into videos: ${summary.videoCaptionsBurned}`]
-        : []),
-      ...(summary.videoCaptionsKept
-        ? [`Captions saved beside videos: ${summary.videoCaptionsKept}`]
-        : []),
-      `Videos (capture time written into the file): ${summary.videos}`,
-      "",
-      "About the locations",
-      "",
-      "Snapchat's export doesn't say which photo goes with which entry in its",
-      "list, so when several memories share a day we can't always tell them",
-      "apart. Those get the centre of where that day's memories were, marked",
-      "\"approximate\" in the CSV. Where the day was spread too far for a centre",
-      "to mean anything, the location is left out rather than guessed at: a",
-      "pin in the wrong place looks exactly like a pin in the right one.",
-      "",
-      ...(summary.videoCaptionsKept
-        ? [
-            "About the captions folder",
-            "",
-            "Snapchat ships a video's caption as a separate transparent PNG.",
-            "Most are drawn back into the video itself. These ones couldn't be",
-            "(either this browser has no video encoder, or the file wasn't one",
-            "it would take), so they're in the captions/ folder, named to match",
-            "their video, rather than lost.",
-            "",
-          ]
-        : []),
-      "Photos carry EXIF DateTimeOriginal and GPS, so Google Photos, Apple",
-      "Photos, Immich and everything else will file them under the day they",
-      "actually happened.",
-      "",
-      "keepmysnaps-index.csv has the same data as plain text, in case you want",
-      "to do something else with it.",
-      "",
-      "Not affiliated with Snapchat or Snap Inc.",
-    ].join("\n"),
-  );
-
-  report({
-    phase: "packing",
-    done: selected.length,
-    total: selected.length,
-    label: "Packing your ZIP",
-  });
-
-  await out.close();
-  const blob = await sink.finish();
-
-  report({ phase: "done", done: 100, total: 100, label: "Done" });
-
-  // Close the readers. They only ever held each ZIP's index, but a closed
-  // reader is one the browser can stop tracking.
-  await Promise.all(readers.map((r) => r.close().catch(() => {})));
-
-  return { blob, summary };
 }
 
 
@@ -606,7 +629,18 @@ export async function processExport(
  * reads as a broken product rather than the wrong browser. And a machine
  * without room failed at the very end, after all the work.
  */
-async function preflight(inputBytes: number): Promise<void> {
+async function preflight(
+  inputBytes: number,
+  saveTo: FileSystemFileHandle | null,
+): Promise<void> {
+  // A file the person picked sits on their own disk, outside the allowance a
+  // browser keeps for a website's storage. That allowance is the smaller
+  // number by a long way, and applying it to a destination it doesn't govern
+  // turned a 12.8GB export away on a machine with room for it twice over.
+  // The only ceiling here is the volume, which the browser will not tell us,
+  // so there is nothing to check: the write fails honestly if it runs out.
+  if (saveTo) return;
+
   const root = await opfsRoot();
   let streams = false;
   if (root) {
@@ -637,8 +671,11 @@ async function preflight(inputBytes: number): Promise<void> {
   const { quota = 0, usage = 0 } = (await navigator.storage?.estimate?.()) ?? {};
   const room = Math.max(0, quota - usage);
   if (quota && room < needed) {
+    // Only browsers that can't hand over a save location land here, so the
+    // useful thing to say is which browser can, not "free up disk space" on
+    // a machine that may have plenty.
     throw new NotEnoughRoom(
-      `This needs about ${gb(needed)} of room to write the fixed copy, and this browser is only allowed ${gb(room)}. Free up disk space and try again. You'll also want about ${gb(needed)} spare wherever your downloads land.`,
+      `This needs about ${gb(needed)} of room and this browser will only let a website keep ${gb(room)}. Chrome or Edge can write the fixed copy straight to your disk instead, with no such limit, and nothing is uploaded there either: the work still happens on your machine. Freeing up disk space raises this limit too, if you would rather stay here.`,
     );
   }
 }
@@ -665,27 +702,74 @@ export async function clearStoredOutput(): Promise<void> {
 }
 
 /**
+ * Hands the archive writer a stream to lock, and keeps the real one back.
+ *
+ * A stream cannot be aborted once anything holds a writer on it, and the
+ * archive writer takes one the moment it starts. So the destination's writer
+ * is taken here first and every chunk is forwarded through it: what gets
+ * locked is this wrapper, and a run that stops halfway still has a handle on
+ * the real stream to throw its scratch file away with. Returning each write
+ * keeps the backpressure that lets a 12GB export stream at all.
+ */
+function forwardTo(target: FileSystemWritableFileStream): {
+  writable: WritableStream<Uint8Array>;
+  discard: () => Promise<void>;
+} {
+  const writer = target.getWriter();
+  return {
+    writable: new WritableStream<Uint8Array>({
+      write: (chunk) => writer.write(chunk),
+      close: () => writer.close(),
+      abort: (reason) => writer.abort(reason),
+    }),
+    discard: async () => {
+      await writer.abort().catch(() => {});
+    },
+  };
+}
+
+/**
  * Where the finished ZIP is written while it is being made.
  *
  * Assembling the archive in memory and handing it over at the end is what made
  * a real library impossible: a 13GB export finished its work and then died
- * building a blob no tab can hold. So the bytes go into a file in the
- * browser's own storage as they are produced, and what comes back at the end
- * is backed by disk. Browsers without that storage fall back to memory, which
- * is the small-export case anyway.
+ * building a blob no tab can hold. So the bytes are streamed out as they are
+ * produced, into the best of three places.
+ *
+ * Best is the file the person picked, because it is the only one with no
+ * ceiling but the disk, and because the archive then exists exactly once. The
+ * browser's own storage, the next best, is both rationed and a waypoint: a
+ * finished export had to fit there and then be copied again into the
+ * downloads folder, so a library needed room for itself twice before anyone
+ * could open it. Memory is the last resort and the small-export case anyway.
  */
-async function openOutputSink(): Promise<{
+async function openOutputSink(
+  saveTo: FileSystemFileHandle | null,
+): Promise<{
   writable: WritableStream<Uint8Array>;
-  finish: () => Promise<Blob>;
+  finish: () => Promise<Blob | null>;
+  /** Throw away a run that didn't get to the end, scratch file and all. */
+  abort: () => Promise<void>;
 }> {
+  if (saveTo) {
+    const { writable, discard } = forwardTo(await saveTo.createWritable());
+    return {
+      writable,
+      // Nothing comes back: the bytes are already where they were asked to go.
+      finish: async () => null,
+      abort: discard,
+    };
+  }
+
   const opfs = await navigator.storage?.getDirectory?.().catch(() => null);
   if (opfs) {
     try {
       const handle = await opfs.getFileHandle(OUTPUT_FILENAME, { create: true });
-      const writable = await handle.createWritable();
+      const { writable, discard } = forwardTo(await handle.createWritable());
       return {
-        writable: writable as unknown as WritableStream<Uint8Array>,
+        writable,
         finish: async () => handle.getFile(),
+        abort: discard,
       };
     } catch {
       // No quota, or a browser that only claims to support this.
@@ -696,6 +780,8 @@ async function openOutputSink(): Promise<{
   return {
     writable: blobWriter.writable as unknown as WritableStream<Uint8Array>,
     finish: () => blobWriter.getData(),
+    // Memory only, so letting go of it is the whole cleanup.
+    abort: async () => {},
   };
 }
 
