@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Keep the documented template, not the real values
 !.env.example
+
+.open-next/
+.wrangler/
+.dev.vars
+.DS_Store

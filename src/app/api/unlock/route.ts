@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getStripe, looksLikeSessionId } from "@/lib/stripe";
+import {
+  isStripeError,
+  looksLikeSessionId,
+  retrieveCheckoutSession,
+  stripeIsConfigured,
+} from "@/lib/stripe";
 import { findUnlock, getAdminClient, recordUnlock } from "@/lib/unlocks";
 import { PRICE_CENTS, PRICE_CURRENCY } from "@/lib/config";
 import { clientKey, rateLimit } from "@/lib/ratelimit";
@@ -51,8 +56,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const stripe = getStripe();
-  if (!stripe) {
+  if (!stripeIsConfigured()) {
     return NextResponse.json(
       { error: "Payments aren't configured on this deployment." },
       { status: 503 },
@@ -60,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await retrieveCheckoutSession(sessionId);
 
     const paid =
       session.payment_status === "paid" || session.payment_status === "no_payment_required";
@@ -104,12 +108,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ unlocked: true });
   } catch (err) {
-    // Stripe 404s on ids it doesn't recognise: a real "no", and not worth
-    // logging. Anything else — a timeout, a network failure, an outage, a bad
+    // Stripe says "no such session" for ids it doesn't recognise: a real "no",
+    // and not worth logging. Anything else — a timeout, a network failure, an outage, a bad
     // key — is not an answer about the payment. Replying "not paid" would make
     // the browser forget a genuine customer's id, so it's a 502 instead, which
     // the browser treats as "ask again".
-    if ((err as { statusCode?: number }).statusCode === 404) {
+    if (isStripeError(err) && err.missing) {
       return NextResponse.json({ unlocked: false });
     }
     console.error("[unlock] stripe verification failed", err);

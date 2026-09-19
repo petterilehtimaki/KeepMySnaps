@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStripe } from "@/lib/stripe";
+import { listCheckoutSessions, listCustomers, stripeIsConfigured } from "@/lib/stripe";
 import { sendRestoreLink } from "@/lib/mail";
 import { clientKey, rateLimit } from "@/lib/ratelimit";
 import { absoluteUrl } from "@/lib/seo";
@@ -56,11 +56,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const stripe = getStripe();
-  if (!stripe) return NextResponse.json(SAME_ANSWER);
+  if (!stripeIsConfigured()) return NextResponse.json(SAME_ANSWER);
 
   try {
-    const sessionId = await findPaidSession(stripe, email);
+    const sessionId = await findPaidSession(email);
     if (sessionId) {
       await sendRestoreLink(
         email,
@@ -75,8 +74,6 @@ export async function POST(request: Request) {
   return NextResponse.json(SAME_ANSWER);
 }
 
-type StripeClient = NonNullable<ReturnType<typeof getStripe>>;
-
 /**
  * The most recent paid checkout for an address, by whichever route finds it.
  *
@@ -84,13 +81,10 @@ type StripeClient = NonNullable<ReturnType<typeof getStripe>>;
  * of recent sessions, which is what catches a guest purchase made before that
  * was true.
  */
-async function findPaidSession(
-  stripe: StripeClient,
-  email: string,
-): Promise<string | null> {
-  const customers = await stripe.customers.list({ email, limit: 10 });
+async function findPaidSession(email: string): Promise<string | null> {
+  const customers = await listCustomers({ email, limit: 10 });
   for (const customer of customers.data) {
-    const sessions = await stripe.checkout.sessions.list({
+    const sessions = await listCheckoutSessions({
       customer: customer.id,
       limit: 10,
     });
@@ -98,7 +92,7 @@ async function findPaidSession(
     if (paid) return paid.id;
   }
 
-  const recent = await stripe.checkout.sessions.list({ limit: RECENT_SESSIONS });
+  const recent = await listCheckoutSessions({ limit: RECENT_SESSIONS });
   const match = recent.data.find(
     (s) =>
       s.payment_status === "paid" &&

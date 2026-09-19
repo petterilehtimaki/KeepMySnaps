@@ -44,6 +44,15 @@ const csp = [
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
   { key: "X-Content-Type-Options", value: "nosniff" },
+  /**
+   * A year, subdomains included. The site is https-only and the redirect for
+   * plain http is one hop, but a redirect still means one request in the
+   * clear; this stops there being a second one.
+   */
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains",
+  },
   { key: "X-Frame-Options", value: "DENY" },
   /**
    * A verified Stripe session id arrives as `?session_id=` and is the one
