@@ -88,11 +88,6 @@ export default function Uploader() {
         return;
       }
 
-      // Settle the unlock check before anything else. It starts on mount so
-      // it's almost always resolved by now, and deciding first means a
-      // blocked drop never flashes "Opening the ZIP" at someone.
-      const isUnlocked = await settled();
-
       // The free tier is one run, not one ZIP. Snapchat splits an export
       // across several and only one of them holds memories_history.json, so
       // asking somebody to pick the right one is asking them to know something
@@ -101,9 +96,17 @@ export default function Uploader() {
       // and the one-run-per-tab gate below do the work the ZIP count used to.
       // Answered before a single byte is read: being turned away shouldn't
       // cost you a five-gigabyte unzip.
-      if (!isUnlocked && freeRunUsedRef.current) {
-        setState({ kind: "locked", count: zips.length });
-        return;
+      //
+      // Only a second run in the same tab can be turned away, and that flag is
+      // already in hand. So the first run asks the server nothing yet: waiting
+      // here is what used to break the save dialog below.
+      let isUnlocked: boolean | null = null;
+      if (freeRunUsedRef.current) {
+        isUnlocked = await settled();
+        if (!isUnlocked) {
+          setState({ kind: "locked", count: zips.length });
+          return;
+        }
       }
 
       if (urlRef.current) {
@@ -121,8 +124,12 @@ export default function Uploader() {
       // picked has no such ceiling, and the archive exists once instead of
       // twice.
       //
-      // The click that got us here is still fresh, which is what lets this
-      // dialog open at all.
+      // Nothing may be awaited between the click and this line. A browser only
+      // honours a file dialog for about five seconds after a click, and the
+      // unlock check that used to run first can spend that long on a request
+      // and its retries. The dialog was then refused, the run fell back to the
+      // browser's own storage without saying so, and somebody who had paid was
+      // told their disk was too small for their own photos. It wasn't.
       let saveTo: FileSystemFileHandle | null = null;
       if (typeof showSaveFilePicker === "function") {
         try {
@@ -142,10 +149,19 @@ export default function Uploader() {
             return;
           }
           // Anything else, a policy or a frame that isn't allowed to ask,
-          // falls through to the in-browser path rather than stopping.
+          // falls through to the in-browser path rather than stopping. Say so
+          // somewhere: a silent fallback here is indistinguishable from a
+          // browser that never had a save dialog, and the two need different
+          // answers.
+          console.warn("KeepMySnaps: save dialog refused, falling back", err);
           saveTo = null;
         }
+      } else {
+        console.warn("KeepMySnaps: this browser has no save dialog");
       }
+
+      // Safe to wait now: the dialog is either open or was never going to be.
+      if (isUnlocked === null) isUnlocked = await settled();
 
       const controller = new AbortController();
       abortRef.current = controller;
